@@ -1,0 +1,10 @@
+# Bison/Flex Generated
+*.gen.c
+*.gen.h
+
+# Object Files
+*.o
+a.out
+
+# VS Code (For now)
+.vscode
