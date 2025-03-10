@@ -7,9 +7,10 @@
 
 %{
 #include <parser.gen.h>
+#include <sql.h>
 #include <stdio.h>
 
-(yyscan_t *locp, SelectStatement *selectStatement, char *s);
+void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %}
 
 

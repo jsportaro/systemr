@@ -1,6 +1,8 @@
 #ifndef __SYSTEMR_SQL_H__
 #define __SYSTEMR_SQL_H__
 
+#include <common.h>
+
 #define UNUSED(x) (void)(x)
 
 typedef struct
@@ -50,10 +52,6 @@ typedef struct term_expr
 
 typedef struct {
     int i;
-} SelectStatement;
-
-typedef struct {
-    int i;
 } SelectExpression;
 
 typedef struct {
@@ -61,21 +59,37 @@ typedef struct {
 } TableReference;
 
 typedef struct {
-    int i;
-} WhereExpression;
+    SelectExpression selectList[MAX_ARRAY_SIZE];
+    int selectListCountount;
 
-SelectStatement* CreateSelectStatement(SelectExpression *selectExpression, TableReference *tableReferences, WhereExpression *whereExpressions);
-SelectExpression* CreateSelectExpressionList(Expression *expression);
-SelectExpression* AppendSelectExpressionList(SelectExpression* selectExpressionList, Expression *expression);
-TableReference* CreateTableReferenceList(TableReference* tableReference);
-TableReference* AppendTableReferenceList(TableReference* tableReferenceList, TableReference* tableReference);
-TableReference* CreateTableReference(const char *name);
+    TableReference tables[MAX_ARRAY_SIZE];
+    int tableCount;
 
-Expression* CreateStringExpression(const char* string);
-Expression* CreateNumberExpression(long number);
-Expression* CreateIdentifierExpression(const char* qualifier, const char* name);
-Expression* CreateInfixExpression(ExpressionType expressionType, Expression *left, Expression *right);
+    Expression *whereExpression;
+} SelectStatement;
 
-WhereExpression* CreateWhereExpression(Expression *where);
+typedef struct 
+{
+    SelectStatement selectStatment;
+
+    Expression expressions[MAX_ARRAY_SIZE];
+    int expressionCount;
+
+    TableReference tableReferences[MAX_ARRAY_SIZE];
+    int tableCount;
+} ParsingContext;
+
+SelectStatement* CreateSelectStatement(ParsingContext *parsingContext);
+Expression* AppendSelectExpressionList(ParsingContext *parsingContext, Expression *expression);
+TableReference* CreateTableReferenceList(ParsingContext *parsingContext, TableReference* tableReference);
+TableReference* AppendTableReferenceList(ParsingContext *parsingContext, TableReference* tableReferenceList, TableReference* tableReference);
+TableReference* CreateTableReference(ParsingContext *parsingContext, const char *name);
+
+Expression* CreateStringExpression(ParsingContext *parsingContext, const char* string);
+Expression* CreateNumberExpression(ParsingContext *parsingContext, long number);
+Expression* CreateIdentifierExpression(ParsingContext *parsingContext, const char* qualifier, const char* name);
+Expression* CreateInfixExpression(ParsingContext *parsingContext, ExpressionType expressionType, Expression *left, Expression *right);
+
+Expression* AppendWhereExpression(ParsingContext *parsingContext, Expression *where);
 
 #endif

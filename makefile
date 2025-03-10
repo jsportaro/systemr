@@ -4,10 +4,11 @@ YACC = bison
 
 .PHONY: clean
 
-parser.gen.o: parser.gen.c lexer.gen.h sql.h
+systemr: main.c  sql.c  parser.c sql.c parser.gen.c lexer.gen.c
+	gcc $(CFLAGS) -o main.c parser.c parser.gen.c lexer.gen.c
 
 lexer.gen.c lexer.gen.h: lexer.l
-	flex --header-file=lexer.gen.h --outfile=lexer.gen.c lexer.l
+	${LEX} --header-file=lexer.gen.h --outfile=lexer.gen.c lexer.l
 
 parser.gen.c parser.gen.h: grammar.y
 	${YACC} --header=parser.gen.h --output=parser.gen.c grammar.y

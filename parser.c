@@ -1,12 +1,19 @@
-#include <lexer.h>
 #include <parser.gen.h>
+#include <lexer.gen.h>
 #include <parser.h>
 
-void parse_sql(char *sql, size_t length)
+int parse_sql(char *sql, size_t length)
 {
-    yyscan_t sc;
+    yyscan_t scanInfo = {0};
+    ParsingContext context = {0};
+    if(yylex_init(&scanInfo))
+    {
+        return 1;
+    }
 
-    yylex_init(&sc);
-    yy_scan_bytes(sql, length, sc);
-    yylex_destroy(sc);
+    yy_scan_bytes(sql, length, scanInfo);
+    yyparse(&scanInfo, &context);
+    yylex_destroy(scanInfo);
+
+    return 0;
 }

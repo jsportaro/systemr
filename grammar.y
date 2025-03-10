@@ -3,7 +3,7 @@
 %define parse.error verbose
 
 %lex-param {void *scanner}
-%parse-param {void *scanner}{ SelectStatement *selectStatement }
+%parse-param {void *scanner}{ ParsingContext *parsingContext }
 
 %{
 #include <sql.h>
@@ -14,7 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 
-void yyerror(yyscan_t *locp, SelectStatement *selectStatement, const char *s);
+void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %}
 
 %code requires
@@ -44,10 +44,9 @@ void yyerror(yyscan_t *locp, SelectStatement *selectStatement, const char *s);
 %token WHERE   
 
 %type <SelectStatement*> select_stmt
-%type <SelectExpression*> select_expr_list
-%type <Expression*> select_expr
+%type <Expression*> select_expr select_expr_list
 %type <TableReference*> table_refs table_ref
-%type <WhereExpression*> opt_where
+%type <Expression*> opt_where
 %type <Expression*> expr
 
 %start select_stmt;
@@ -58,17 +57,17 @@ select_stmt:
     SELECT select_expr_list
     FROM table_refs            
     opt_where                        { 
-                                       $$ = CreateSelectStatement($2, $4, $5); 
+                                       $$ = CreateSelectStatement(parsingContext); 
                                      }
 ;  
 
 select_expr_list: 
     select_expr                      { 
-                                       $$ = CreateSelectExpressionList($1); 
+                                       $$ = AppendSelectExpressionList(parsingContext, $1); 
                                      }
 
   | select_expr_list ',' select_expr { 
-                                       $$ = AppendSelectExpressionList($1, $3); 
+                                       $$ = AppendSelectExpressionList(parsingContext, $3); 
                                      }
 ;
 
@@ -78,44 +77,44 @@ select_expr:
 ;
 
 table_refs:
-    table_ref                        { $$ = CreateTableReferenceList($1); }
-  | table_refs ',' table_ref         { $$ = AppendTableReferenceList($1, $3); } 
+    table_ref                        { $$ = CreateTableReferenceList(parsingContext, $1); }
+  | table_refs ',' table_ref         { $$ = AppendTableReferenceList(parsingContext, $1, $3); } 
 ;
 
 table_ref:
-    "identifier"                     { $$ = CreateTableReference($1); }
+    "identifier"                     { $$ = CreateTableReference(parsingContext, $1); }
 ;
 
 opt_where:
                                      { $$ = NULL; }
   | WHERE expr                       { 
-                                       $$ = CreateWhereExpression($2);  
+                                       $$ = AppendWhereExpression(parsingContext, $2);  
                                      }
 ;
 
 expr:
-    "string"                         { $$ = CreateStringExpression($1);           }
-  | "integer"                        { $$ = CreateNumberExpression($1);           }
-  | "identifier"                     { $$ = CreateIdentifierExpression(NULL, $1); }
-  | "identifier" '.' "identifier"    { $$ = CreateIdentifierExpression($1, $3);   }                   
+    "string"                         { $$ = CreateStringExpression(parsingContext, $1);           }
+  | "integer"                        { $$ = CreateNumberExpression(parsingContext, $1);           }
+  | "identifier"                     { $$ = CreateIdentifierExpression(parsingContext, NULL, $1); }
+  | "identifier" '.' "identifier"    { $$ = CreateIdentifierExpression(parsingContext, $1, $3);   }                   
 ;
 
 expr: 
-    expr '+' expr                    { $$ = CreateInfixExpression(EXPR_ADD, $1, $3); }
-  | expr '-' expr                    { $$ = CreateInfixExpression(EXPR_SUB, $1, $3); }
-  | expr '*' expr                    { $$ = CreateInfixExpression(EXPR_MUL, $1, $3); }
-  | expr '/' expr                    { $$ = CreateInfixExpression(EXPR_DIV, $1, $3); }
-  | expr EQUALITY expr               { $$ = CreateInfixExpression(EXPR_EQU, $1, $3); }
-  | expr AND expr                    { $$ = CreateInfixExpression(EXPR_AND, $1, $3); }
-  | expr OR expr                     { $$ = CreateInfixExpression(EXPR_OR , $1, $3); }
+    expr '+' expr                    { $$ = CreateInfixExpression(parsingContext, EXPR_ADD, $1, $3); }
+  | expr '-' expr                    { $$ = CreateInfixExpression(parsingContext, EXPR_SUB, $1, $3); }
+  | expr '*' expr                    { $$ = CreateInfixExpression(parsingContext, EXPR_MUL, $1, $3); }
+  | expr '/' expr                    { $$ = CreateInfixExpression(parsingContext, EXPR_DIV, $1, $3); }
+  | expr EQUALITY expr               { $$ = CreateInfixExpression(parsingContext, EXPR_EQU, $1, $3); }
+  | expr AND expr                    { $$ = CreateInfixExpression(parsingContext, EXPR_AND, $1, $3); }
+  | expr OR expr                     { $$ = CreateInfixExpression(parsingContext, EXPR_OR , $1, $3); }
 ;
 
 %%
 
 void
-yyerror(yyscan_t *locp, SelectStatement *selectStatement, const char *s)
+yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s)
 {
     UNUSED(locp);
-    UNUSED(selectStatement);
+    UNUSED(parsingContext);
     UNUSED(s);
 }
