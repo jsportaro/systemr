@@ -12,7 +12,7 @@ int parse_sql(char *sql, size_t length)
     }
 
     yy_scan_bytes(sql, length, scanInfo);
-    yyparse(&scanInfo, &context);
+    yyparse(scanInfo, &context);
     yylex_destroy(scanInfo);
 
     return 0;

@@ -3,16 +3,12 @@
 
 #include <common.h>
 
-#define UNUSED(x) (void)(x)
-
-typedef struct
-{
+typedef struct {
     const char *qualifier;
     const char *name;
 } Identifier;
 
-typedef enum
-{
+typedef enum {
     EXPR_INTEGER,
     EXPR_STRING,
     EXPR_IDENIFIER,
@@ -25,21 +21,18 @@ typedef enum
     EXPR_OR,
 } ExpressionType;
 
-typedef struct
-{
+typedef struct {
     ExpressionType type;
 } Expression;
 
-typedef struct infix_expr
-{
+typedef struct {
     ExpressionType type;
 
     Expression *left;
     Expression *right;
 } InfixExpression;
 
-typedef struct term_expr
-{
+typedef struct {
     ExpressionType type;
 
     union 
@@ -55,7 +48,7 @@ typedef struct {
 } SelectExpression;
 
 typedef struct {
-    int i;
+    const char *name;
 } TableReference;
 
 typedef struct {
@@ -74,16 +67,11 @@ typedef struct
 
     Expression expressions[MAX_ARRAY_SIZE];
     int expressionCount;
-
-    TableReference tableReferences[MAX_ARRAY_SIZE];
-    int tableCount;
 } ParsingContext;
 
 SelectStatement* CreateSelectStatement(ParsingContext *parsingContext);
 Expression* AppendSelectExpressionList(ParsingContext *parsingContext, Expression *expression);
-TableReference* CreateTableReferenceList(ParsingContext *parsingContext, TableReference* tableReference);
-TableReference* AppendTableReferenceList(ParsingContext *parsingContext, TableReference* tableReferenceList, TableReference* tableReference);
-TableReference* CreateTableReference(ParsingContext *parsingContext, const char *name);
+TableReference* AppendTableReferenceList(ParsingContext *parsingContext, const char *tableName);
 
 Expression* CreateStringExpression(ParsingContext *parsingContext, const char* string);
 Expression* CreateNumberExpression(ParsingContext *parsingContext, long number);

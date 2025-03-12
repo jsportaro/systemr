@@ -45,7 +45,8 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 
 %type <SelectStatement*> select_stmt
 %type <Expression*> select_expr select_expr_list
-%type <TableReference*> table_refs table_ref
+%type <TableReference*> table_refs 
+%type <const char*> table_ref
 %type <Expression*> opt_where
 %type <Expression*> expr
 
@@ -77,12 +78,12 @@ select_expr:
 ;
 
 table_refs:
-    table_ref                        { $$ = CreateTableReferenceList(parsingContext, $1); }
-  | table_refs ',' table_ref         { $$ = AppendTableReferenceList(parsingContext, $1, $3); } 
+    table_ref                        { $$ = AppendTableReferenceList(parsingContext, $1); }
+  | table_refs ',' table_ref         { $$ = AppendTableReferenceList(parsingContext, $3); } 
 ;
 
 table_ref:
-    "identifier"                     { $$ = CreateTableReference(parsingContext, $1); }
+    "identifier"                     { $$ = $1; }
 ;
 
 opt_where:

@@ -14,23 +14,13 @@ Expression* AppendSelectExpressionList(ParsingContext *parsingContext, Expressio
     return &parsingContext->expressions[0];
 }
 
-TableReference* CreateTableReferenceList(ParsingContext *parsingContext, TableReference* tableReference)
+TableReference* AppendTableReferenceList(ParsingContext *parsingContext, const char *tableName)
 {
-    UNUSED(tableReference);
-    return &parsingContext->tableReferences[0];
-}
+    TableReference* table = &parsingContext->selectStatment.tables[parsingContext->selectStatment.tableCount++];
 
-TableReference* AppendTableReferenceList(ParsingContext *parsingContext, TableReference* tableReferenceList, TableReference* tableReference)
-{
-    UNUSED(tableReferenceList);
-    UNUSED(tableReference);
-    return &parsingContext->tableReferences[0];
-}
+    table->name = tableName;
 
-TableReference* CreateTableReference(ParsingContext *parsingContext, const char *name)
-{
-    UNUSED(name);
-    return &parsingContext->tableReferences[0];
+    return table;
 }
 
 Expression* CreateStringExpression(ParsingContext *parsingContext, const char* string)

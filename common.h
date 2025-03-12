@@ -3,4 +3,6 @@
 
 #define MAX_ARRAY_SIZE 25
 
+#define UNUSED(x) (void)(x)
+
 #endif
