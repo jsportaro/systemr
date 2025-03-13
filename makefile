@@ -11,7 +11,7 @@ lexer.gen.c lexer.gen.h: lexer.l
 	${LEX} --header-file=lexer.gen.h --outfile=lexer.gen.c lexer.l
 
 parser.gen.c parser.gen.h: grammar.y
-	${YACC} --header=parser.gen.h --output=parser.gen.c grammar.y
+	${YACC} --defines=parser.gen.h --output=parser.gen.c grammar.y
 
 clean:
 	rm -f *.o *.gen.* systemr
