@@ -45,7 +45,7 @@ typedef struct
     {
         int number;
         const char *string;
-        Identifier *identifier;
+        Identifier identifier;
     } value;
 } TermExpression;
 

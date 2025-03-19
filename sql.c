@@ -57,8 +57,8 @@ Expression* CreateIdentifierExpression(ParsingContext *parsingContext, const cha
 {
     TermExpression *expression = NEW(&parsingContext->parseArena, TermExpression);
     
-    expression->value.identifier->qualifier = qualifier;
-    expression->value.identifier->name = name;
+    expression->value.identifier.qualifier = qualifier;
+    expression->value.identifier.name = name;
     expression->type = EXPR_IDENIFIER;
 
     return (Expression *)expression;
