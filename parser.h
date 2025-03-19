@@ -6,8 +6,6 @@
 
 #include <stdlib.h>
 
-#define MAX_EXPRESSIONS 100
-
-int ParseSQL(char *sql, size_t length);
+ParsingContext ParseSQL(char *sql, size_t length, Arena arena);
 
 #endif
