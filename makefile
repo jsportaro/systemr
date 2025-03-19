@@ -4,7 +4,7 @@ YACC = bison
 
 .PHONY: clean
 
-systemr: arena.c main.c sql.c parser.c sql.c parser.gen.c lexer.gen.c
+systemr: arena.c main.c catalog.c sql.c parser.c sql.c parser.gen.c lexer.gen.c
 	gcc $(CFLAGS) -o systemr arena.c main.c sql.c parser.c parser.gen.c lexer.gen.c
 
 lexer.gen.c lexer.gen.h: lexer.l
