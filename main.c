@@ -6,9 +6,9 @@
 int main(void)
 {
     printf("SystemR\n");
-    char* sql = "select * from table1, table2;";
+    char* sql = "select a as column1, b as column2 from table1, table2;";
 
-    parse_sql(sql, strlen(sql));    
+    ParseSQL(sql, strlen(sql));    
 
     return 0;
 }

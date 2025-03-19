@@ -34,7 +34,8 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %left '+' '-'
 %left '*' '/'
 
-%token AND     
+%token AND
+%token AS
 %token BETWEEN 
 %token CHAR    
 %token SELECT  
@@ -43,12 +44,12 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %token OR      
 %token WHERE   
 
-%type <SelectStatement*> select_stmt
-%type <Expression*> select_expr select_expr_list
-%type <TableReference*> table_refs 
-%type <const char*> table_ref
-%type <Expression*> opt_where
-%type <Expression*> expr
+%type <SelectStatement *> select_stmt
+%type <SelectExpression *> select_expr select_expr_list
+%type <TableReference *> table_refs 
+%type <const char *> table_ref
+%type <Expression *> opt_where
+%type <Expression *> expr
 
 %start select_stmt;
 
@@ -73,7 +74,8 @@ select_expr_list:
 ;
 
 select_expr:
-    expr                             { $$ = $1; }
+    expr                             { $$ = CreateSelectExpression(parsingContext, NULL, $1); }
+  | expr AS "identifier"             { $$ = CreateSelectExpression(parsingContext, $3, $1);   }
   | '*'                              { $$ = NULL;}
 ;
 

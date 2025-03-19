@@ -4,8 +4,8 @@ YACC = bison
 
 .PHONY: clean
 
-systemr: main.c sql.c parser.c sql.c parser.gen.c lexer.gen.c
-	gcc $(CFLAGS) -o systemr main.c sql.c parser.c parser.gen.c lexer.gen.c
+systemr: arena.c main.c sql.c parser.c sql.c parser.gen.c lexer.gen.c
+	gcc $(CFLAGS) -o systemr arena.c main.c sql.c parser.c parser.gen.c lexer.gen.c
 
 lexer.gen.c lexer.gen.h: lexer.l
 	${LEX} --header-file=lexer.gen.h --outfile=lexer.gen.c lexer.l

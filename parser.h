@@ -6,6 +6,8 @@
 
 #include <stdlib.h>
 
-int parse_sql(char *sql, size_t length);
+#define MAX_EXPRESSIONS 100
+
+int ParseSQL(char *sql, size_t length);
 
 #endif

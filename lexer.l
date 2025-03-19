@@ -23,6 +23,7 @@ equal     "="
 %%
 
 AND         { return AND;     }
+AS          { return AS;     }
 BETWEEN     { return BETWEEN; }
 CHAR        { return CHAR;    }
 SELECT      { return SELECT;  }

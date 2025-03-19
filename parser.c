@@ -1,11 +1,14 @@
+#include <arena.h>
+#include <parser.h>
 #include <parser.gen.h>
 #include <lexer.gen.h>
-#include <parser.h>
 
-int parse_sql(char *sql, size_t length)
+int ParseSQL(char *sql, size_t length)
 {
     yyscan_t scanInfo = {0};
     ParsingContext context = {0};
+    context.parseArena = NewArena(MAX_EXPRESSIONS);
+    
     if(yylex_init(&scanInfo))
     {
         return 1;
