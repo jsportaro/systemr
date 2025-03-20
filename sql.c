@@ -32,9 +32,6 @@ TableReference* AppendTableReferenceList(ParsingContext *parsingContext, const c
     table->identifier.qualifier = NULL;
     table->identifier.name = tableName;
 
-    table->identifier.next = parsingContext->unresolved;
-    parsingContext->unresolved = &table->identifier;
-
     return table;
 }
 

@@ -9,7 +9,8 @@
 int main(void)
 {
     printf("SystemR\n");
-    char* sql = "SELECT name AS FullName, city AS Town FROM person, place WHERE person.;";
+    //char* sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place;";
+    char* sql = "SELECT person.name, name, a.name FROM person;";
     
     BuildCatalog();
     Arena executionArena = NewArena(EXECUTION_ARENA_SIZE);
