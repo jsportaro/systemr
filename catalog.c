@@ -33,6 +33,22 @@ static int NoCmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
+bool FindRelation(const char *relation, Relation **found)
+{
+    size_t relationLength = strlen(relation);
+    *found = NULL;
+
+    for (int i = 0; i < catalog.relationCount; i++)
+    {
+        if (strncmp(catalog.relations[i].name, relation, relationLength) == 0)
+        {
+            *found = &catalog.relations[i];
+        }
+    }
+
+    return *found != NULL;
+}
+
 Attribute *FindAttribute(const char *attribute, const char *relation, int *found)
 {
     size_t relationLength = strlen(relation);

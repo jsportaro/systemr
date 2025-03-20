@@ -4,18 +4,15 @@
 
 void AttemptBind(ParsingContext *parsingContext)
 {
-    int found = 0;
-    while (parsingContext->unresolved != NULL) 
+    RelationBinding relationBindings[MAX_ARRAY_SIZE] = {0};
+    bool wasBound = true;
+    for (int i = 0; i < parsingContext->selectStatment.tableCount; i++)
     {
-        switch (parsingContext->unresolved->type)
+        relationBindings[i].tableReference = &parsingContext->selectStatment.tables[i];
+
+        if (FindRelation(relationBindings[i].tableReference->identifier.name, &relationBindings[i].boundRelation) != true)
         {
-            case ID_COLUMN:
-                FindAttribute(parsingContext->unresolved->name, parsingContext->unresolved->qualifier, &found);
-                break;
+            wasBound &= false;
         }
-
-        parsingContext->unresolved = parsingContext->unresolved->next;
     }
-
-    UNUSED(parsingContext);
 }

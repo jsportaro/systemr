@@ -5,6 +5,13 @@
 #include <common.h>
 #include <sql.h>
 
+typedef struct
+{
+    TableReference *tableReference;
+    Relation *boundRelation;
+} RelationBinding;
+
+
 void AttemptBind(ParsingContext *parsingContext);
 
 #endif

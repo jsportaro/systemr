@@ -40,5 +40,6 @@ typedef struct
 
 void BuildCatalog(void);
 Attribute *FindAttribute(const char *attribute, const char *relation, int *found);
+bool FindRelation(const char *relation, Relation **found);
 
 #endif
