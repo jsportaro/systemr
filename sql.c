@@ -28,7 +28,12 @@ TableReference* AppendTableReferenceList(ParsingContext *parsingContext, const c
 {
     TableReference* table = &parsingContext->selectStatment.tables[parsingContext->selectStatment.tableCount++];
 
-    table->name = tableName;
+    table->identifier.type = ID_TABLE,
+    table->identifier.qualifier = NULL;
+    table->identifier.name = tableName;
+
+    table->identifier.next = parsingContext->unresolved;
+    parsingContext->unresolved = &table->identifier;
 
     return table;
 }
@@ -56,10 +61,14 @@ Expression* CreateNumberExpression(ParsingContext *parsingContext, long number)
 Expression* CreateIdentifierExpression(ParsingContext *parsingContext, const char* qualifier, const char* name)
 {
     TermExpression *expression = NEW(&parsingContext->parseArena, TermExpression);
-    
+
+    expression->value.identifier.type = ID_COLUMN;
     expression->value.identifier.qualifier = qualifier;
     expression->value.identifier.name = name;
     expression->type = EXPR_IDENIFIER;
+
+    expression->value.identifier.next = parsingContext->unresolved;
+    parsingContext->unresolved = &expression->value.identifier;
 
     return (Expression *)expression;
 }

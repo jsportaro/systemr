@@ -4,10 +4,18 @@
 #include <common.h>
 #include <arena.h>
 
-typedef struct 
+typedef enum
 {
+    ID_TABLE,
+    ID_COLUMN,
+} IdentifierType;
+
+typedef struct Identifier
+{
+    IdentifierType type;
     const char *qualifier;
     const char *name;
+    struct Identifier *next;
 } Identifier;
 
 typedef enum 
@@ -57,7 +65,7 @@ typedef struct
 
 typedef struct 
 {
-    const char *name;
+    Identifier identifier;
 } TableReference;
 
 typedef struct 
@@ -75,6 +83,7 @@ typedef struct
 {
     SelectStatement selectStatment;
     Arena parseArena;
+    Identifier *unresolved;
 } ParsingContext;
 
 SelectStatement *CreateSelectStatement(ParsingContext *parsingContext);

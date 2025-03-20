@@ -1,5 +1,6 @@
 #include <catalog.h>
 #include <common.h>
+#include <binder.h>
 #include <parser.h>
 
 #include <stdio.h>
@@ -13,6 +14,7 @@ int main(void)
     BuildCatalog();
     Arena executionArena = NewArena(EXECUTION_ARENA_SIZE);
     ParsingContext parserContext = ParseSQL(sql, strlen(sql), executionArena);    
+    AttemptBind(&parserContext);
 
     free(executionArena.begin);
     executionArena.begin = NULL;

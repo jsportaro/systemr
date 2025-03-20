@@ -5,6 +5,6 @@
 #include <common.h>
 #include <sql.h>
 
-void AttemptBind(SelectStatement *select);
+void AttemptBind(ParsingContext *parsingContext);
 
 #endif
