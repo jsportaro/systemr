@@ -82,9 +82,9 @@ void BuildCatalog(void)
 
     relation = AddRelation("person");
     AddAttribute(relation, "name", ATTR_CHAR);
-    // AddAttribute(relation, "age", ATTR_INT);
-    // AddAttribute(relation, "address_id", ATTR_INT);
-    // AddAttribute(relation, "id", ATTR_INT);
+    AddAttribute(relation, "age", ATTR_INT);
+    AddAttribute(relation, "address_id", ATTR_INT);
+    AddAttribute(relation, "id", ATTR_INT);
     
     relation = AddRelation("place");
     AddAttribute(relation, "line_one", ATTR_CHAR);

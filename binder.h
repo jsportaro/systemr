@@ -24,6 +24,8 @@ typedef struct
     Identifier *Identifier;
     Attribute *boundAttribute;
     BindingResult bindingResult;
+
+    RelationBinding *relation;
 } AttributeBinding;
 
 

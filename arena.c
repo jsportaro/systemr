@@ -5,7 +5,7 @@
 
 /*
     Implementation notes: This is lifted almost wholesale from Chris Wellons
-        blog posts at nullprogram.  Help shift my perspective on why C is 
+        blog posts at nullprogram.com - Help shift my perspective on why C is 
         generally faster (and it's not only becuase it's compiled)
 */
 
