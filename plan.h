@@ -13,13 +13,13 @@ typedef enum
 
 typedef struct
 {
-    PlanNode root;
-} Plan;
+    PlanNodeType type;
+} PlanNode;
 
 typedef struct
 {
-    PlanNodeType type;
-} PlanNode;
+    PlanNode root;
+} Plan;
 
 typedef struct
 {
@@ -30,11 +30,5 @@ typedef struct
 
     Expression *joinBy;
 } LogicalJoin;
-
-typedef struct
-{
-    /* data */
-};
-
 
 #endif

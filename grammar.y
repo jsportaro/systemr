@@ -44,8 +44,7 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %token OR      
 %token WHERE   
 
-%type <SelectStatement *> select_stmt
-%type <SelectExpression *> select_expr select_expr_list
+%type <SelectExpressionList *> select_expr select_expr_list
 %type <TableReference *> table_refs 
 %type <const char *> table_ref
 %type <Expression *> opt_where
@@ -59,17 +58,17 @@ select_stmt:
     SELECT select_expr_list
     FROM table_refs            
     opt_where                        { 
-                                       $$ = CreateSelectStatement(parsingContext); 
+                                       
                                      }
 ;  
 
 select_expr_list: 
     select_expr                      { 
-                                       $$ = AppendSelectExpressionList(parsingContext, $1); 
+                                       $$ = CreateSelectExpressionList(parsingContext, $1); 
                                      }
 
   | select_expr_list ',' select_expr { 
-                                       $$ = AppendSelectExpressionList(parsingContext, $3); 
+                                       $$ = AppendSelectExpressionList(parsingContext, $1, $3); 
                                      }
 ;
 

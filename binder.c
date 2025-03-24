@@ -29,18 +29,18 @@ static bool CanBindAttribute(Identifier *unresolved, Relation *relation)
     return false;
 }
 
-Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena executionArena)
-{
+// Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena executionArena)
+// {
 
-}
+// }
 
 void AttemptBind(ParsingContext *parsingContext)
 {
     RelationBinding relationBindings[MAX_ARRAY_SIZE * 2] = {0};
     
-    for (int i = 0; i < parsingContext->selectStatment.tableCount; i++)
+    for (int i = 0; i < parsingContext->selectStatment->tableCount; i++)
     {
-        relationBindings[i].tableReference = &parsingContext->selectStatment.tables[i];
+        relationBindings[i].tableReference = &parsingContext->selectStatment->tables[i];
 
         bool found = FindRelation(relationBindings[i].tableReference->identifier.name, &relationBindings[i].boundRelation);
             

@@ -63,6 +63,12 @@ typedef struct
     const char *as;
 } SelectExpression;
 
+typedef struct
+{
+    SelectExpression *selectList[MAX_ARRAY_SIZE];
+    int selectListCount;
+} SelectExpressionList;
+
 typedef struct 
 {
     Identifier identifier;
@@ -70,6 +76,8 @@ typedef struct
 
 typedef struct 
 {
+    SelectExpressionList *selectExpressionList;
+
     SelectExpression *selectList[MAX_ARRAY_SIZE];
     int selectListCount;
 
@@ -81,13 +89,16 @@ typedef struct
 
 typedef struct 
 {
-    SelectStatement selectStatment;
+    SelectStatement *selectStatment;
     Arena parseArena;
     Identifier *unresolved;
 } ParsingContext;
 
 SelectStatement *CreateSelectStatement(ParsingContext *parsingContext);
-SelectExpression *AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpression *selectExpression);
+
+SelectExpressionList *CreateSelectExpressionList(ParsingContext *parsingContext, SelectExpression *selectExpression);
+SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, SelectExpression *selectExpression);
+
 SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const char *as, Expression *expression);
 TableReference *AppendTableReferenceList(ParsingContext *parsingContext, const char *tableName);
 

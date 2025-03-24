@@ -1,21 +1,37 @@
 #include <arena.h>
 #include <sql.h>
 
-SelectStatement* CreateSelectStatement(ParsingContext *parsingContext)
+SelectStatement *CreateSelectStatement(ParsingContext *parsingContext)
 {
-    return &parsingContext->selectStatment;
+    SelectStatement *selectStatement = NEW(&parsingContext->parseArena, SelectStatement);
+
+    parsingContext->selectStatment = selectStatement;
+
+    return parsingContext->selectStatment;
 }
 
-
-SelectExpression* AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpression *selectExpression)
+SelectExpressionList *CreateSelectExpressionList(ParsingContext *parsingContext, SelectExpression *selectExpression)
 {
-    parsingContext->selectStatment.selectList[parsingContext->selectStatment.selectListCount++] = selectExpression;
+    SelectExpressionList *selectExpressionList = NEW(&parsingContext->parseArena, SelectExpressionList);
 
-    return selectExpression;
+    selectExpressionList->selectList[selectExpressionList->selectListCount++] = selectExpression;
+
+    return selectExpressionList;
+}
+
+SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, SelectExpression *selectExpression)
+{
+    UNUSED(parsingContext);
+
+    selectExpressionList->selectList[selectExpressionList->selectListCount++] = selectExpression;
+
+    return selectExpressionList;
 }
 
 SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const char *as, Expression *expression)
 {
+    UNUSED(parsingContext);
+    
     SelectExpression *selectExpression = NEW(&parsingContext->parseArena, SelectExpression);
 
     selectExpression->as = as;
@@ -24,9 +40,9 @@ SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const c
     return selectExpression;
 }
 
-TableReference* AppendTableReferenceList(ParsingContext *parsingContext, const char *tableName)
+TableReference *AppendTableReferenceList(ParsingContext *parsingContext, const char *tableName)
 {
-    TableReference* table = &parsingContext->selectStatment.tables[parsingContext->selectStatment.tableCount++];
+    TableReference* table = &parsingContext->selectStatment->tables[parsingContext->selectStatment->tableCount++];
 
     table->identifier.type = ID_TABLE,
     table->identifier.qualifier = NULL;
@@ -35,7 +51,7 @@ TableReference* AppendTableReferenceList(ParsingContext *parsingContext, const c
     return table;
 }
 
-Expression* CreateStringExpression(ParsingContext *parsingContext, const char* string)
+Expression *CreateStringExpression(ParsingContext *parsingContext, const char* string)
 {
     TermExpression *expression = NEW(&parsingContext->parseArena, TermExpression);
     
@@ -45,7 +61,7 @@ Expression* CreateStringExpression(ParsingContext *parsingContext, const char* s
     return (Expression *)expression;
 }
 
-Expression* CreateNumberExpression(ParsingContext *parsingContext, long number)
+Expression *CreateNumberExpression(ParsingContext *parsingContext, long number)
 {
     TermExpression *expression = NEW(&parsingContext->parseArena, TermExpression);
     
@@ -55,7 +71,7 @@ Expression* CreateNumberExpression(ParsingContext *parsingContext, long number)
     return (Expression *)expression;
 }
 
-Expression* CreateIdentifierExpression(ParsingContext *parsingContext, const char* qualifier, const char* name)
+Expression *CreateIdentifierExpression(ParsingContext *parsingContext, const char* qualifier, const char* name)
 {
     TermExpression *expression = NEW(&parsingContext->parseArena, TermExpression);
 
@@ -70,7 +86,7 @@ Expression* CreateIdentifierExpression(ParsingContext *parsingContext, const cha
     return (Expression *)expression;
 }
 
-Expression* CreateInfixExpression(ParsingContext *parsingContext, ExpressionType expressionType, Expression *left, Expression *right)
+Expression *CreateInfixExpression(ParsingContext *parsingContext, ExpressionType expressionType, Expression *left, Expression *right)
 {
     InfixExpression *expression = NEW(&parsingContext->parseArena, InfixExpression);
     
@@ -81,9 +97,9 @@ Expression* CreateInfixExpression(ParsingContext *parsingContext, ExpressionType
     return (Expression *)expression;
 }
 
-Expression* AppendWhereExpression(ParsingContext *parsingContext, Expression *where)
+Expression *AppendWhereExpression(ParsingContext *parsingContext, Expression *where)
 {
-    parsingContext->selectStatment.whereExpression = where;
+    parsingContext->selectStatment->whereExpression = where;
 
     return where;
 }
