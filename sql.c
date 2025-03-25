@@ -3,11 +3,11 @@
 
 SelectStatement *CreateSelectStatement(ParsingContext *parsingContext)
 {
+    UNUSED(parsingContext);
+
     SelectStatement *selectStatement = NEW(&parsingContext->parseArena, SelectStatement);
 
-    parsingContext->selectStatment = selectStatement;
-
-    return parsingContext->selectStatment;
+    return selectStatement;
 }
 
 SelectExpressionList *CreateSelectExpressionList(ParsingContext *parsingContext, SelectExpression *selectExpression)
