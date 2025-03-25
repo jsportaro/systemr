@@ -38,11 +38,11 @@ void AttemptBind(ParsingContext *parsingContext)
 {
     RelationBinding relationBindings[MAX_ARRAY_SIZE * 2] = {0};
     
-    for (int i = 0; i < parsingContext->selectStatment->tableCount; i++)
+    for (int i = 0; i < parsingContext->selectStatement->tableReferenceList->count; i++)
     {
-        relationBindings[i].tableReference = &parsingContext->selectStatment->tables[i];
+        relationBindings[i].tableReference = parsingContext->selectStatement->tableReferenceList->tableReferences[i];
 
-        bool found = FindRelation(relationBindings[i].tableReference->identifier.name, &relationBindings[i].boundRelation);
+        bool found = FindRelation(relationBindings[i].tableReference->name, &relationBindings[i].boundRelation);
             
         relationBindings[i].bindingResult = found == true ? BIND_SUCCESS : BIND_NOT_FOUND;
 

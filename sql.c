@@ -1,11 +1,20 @@
 #include <arena.h>
 #include <sql.h>
 
-SelectStatement *CreateSelectStatement(ParsingContext *parsingContext)
+void Finalize(ParsingContext *parsingContext, SelectStatement* selectStatement)
+{
+    parsingContext->selectStatement = selectStatement;
+}
+
+SelectStatement *CreateSelectStatement(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, TableReferenceList *tableReferenceList, Expression *whereExpression)
 {
     UNUSED(parsingContext);
 
     SelectStatement *selectStatement = NEW(&parsingContext->parseArena, SelectStatement);
+
+    selectStatement->selectExpressionList = selectExpressionList;
+    selectStatement->tableReferenceList = tableReferenceList;
+    selectStatement->whereExpression = whereExpression;
 
     return selectStatement;
 }
@@ -14,9 +23,7 @@ SelectExpressionList *CreateSelectExpressionList(ParsingContext *parsingContext,
 {
     SelectExpressionList *selectExpressionList = NEW(&parsingContext->parseArena, SelectExpressionList);
 
-    selectExpressionList->selectList[selectExpressionList->selectListCount++] = selectExpression;
-
-    return selectExpressionList;
+    return AppendSelectExpressionList(parsingContext, selectExpressionList, selectExpression);;
 }
 
 SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, SelectExpression *selectExpression)
@@ -30,8 +37,6 @@ SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext,
 
 SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const char *as, Expression *expression)
 {
-    UNUSED(parsingContext);
-    
     SelectExpression *selectExpression = NEW(&parsingContext->parseArena, SelectExpression);
 
     selectExpression->as = as;
@@ -40,15 +45,21 @@ SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const c
     return selectExpression;
 }
 
-TableReference *AppendTableReferenceList(ParsingContext *parsingContext, const char *tableName)
+TableReferenceList *CreateTableReferenceList(ParsingContext *parsingContext, const char *tableName)
 {
-    TableReference* table = &parsingContext->selectStatment->tables[parsingContext->selectStatment->tableCount++];
+    TableReferenceList *tableReferenceList = NEW(&parsingContext->parseArena, TableReferenceList);
 
-    table->identifier.type = ID_TABLE,
-    table->identifier.qualifier = NULL;
-    table->identifier.name = tableName;
+    return AppendTableReferenceList(parsingContext, tableReferenceList, tableName);;
+}
 
-    return table;
+TableReferenceList *AppendTableReferenceList(ParsingContext *parsingContext, TableReferenceList *tableReferenceList, const char *tableName)
+{
+    TableReference *tableReference = NEW(&parsingContext->parseArena, TableReference);
+
+    tableReference->name = tableName;
+    tableReferenceList->tableReferences [tableReferenceList->count++] = tableReference;
+
+    return tableReferenceList;
 }
 
 Expression *CreateStringExpression(ParsingContext *parsingContext, const char* string)
@@ -75,7 +86,6 @@ Expression *CreateIdentifierExpression(ParsingContext *parsingContext, const cha
 {
     TermExpression *expression = NEW(&parsingContext->parseArena, TermExpression);
 
-    expression->value.identifier.type = ID_COLUMN;
     expression->value.identifier.qualifier = qualifier;
     expression->value.identifier.name = name;
     expression->type = EXPR_IDENIFIER;
@@ -97,9 +107,20 @@ Expression *CreateInfixExpression(ParsingContext *parsingContext, ExpressionType
     return (Expression *)expression;
 }
 
+Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left, SelectStatement *selectStatement)
+{
+    InQueryExpression *expression = NEW(&parsingContext->parseArena, InQueryExpression);
+
+    expression->left = left;
+    expression->query = selectStatement;
+    expression->type = EXPR_IN_QUERY;
+
+    return (Expression *)expression;
+}
+
 Expression *AppendWhereExpression(ParsingContext *parsingContext, Expression *where)
 {
-    parsingContext->selectStatment->whereExpression = where;
-
+    UNUSED(parsingContext);
+    
     return where;
 }

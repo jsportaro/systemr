@@ -31,6 +31,7 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %left AND
 %left OR
 %left EQUALITY
+%nonassoc IN
 %left '+' '-'
 %left '*' '/'
 
@@ -47,25 +48,25 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %type <SelectStatement *> select_stmt
 %type <SelectExpressionList *> select_expr_list
 %type <SelectExpression *> select_expr
-%type <TableReference *> table_refs 
+%type <TableReferenceList *> table_refs 
 %type <const char *> table_ref
 %type <Expression *> opt_where
 %type <Expression *> expr
 
-%start select_stmt;
+%start sql_start;
 
 %%
 
 sql_start:
   select_stmt                       {
-                                      Finalize(parsingContext);
+                                      Finalize(parsingContext, $1);
                                     }
 
 select_stmt: 
     SELECT select_expr_list
     FROM table_refs            
     opt_where                        { 
-                                       $$ = CreateSelectStatement(parsingContext);
+                                       $$ = CreateSelectStatement(parsingContext, $2, $4, $5);
                                      }
 ;  
 
@@ -86,8 +87,8 @@ select_expr:
 ;
 
 table_refs:
-    table_ref                        { $$ = AppendTableReferenceList(parsingContext, $1); }
-  | table_refs ',' table_ref         { $$ = AppendTableReferenceList(parsingContext, $3); } 
+    table_ref                        { $$ = CreateTableReferenceList(parsingContext, $1);     }
+  | table_refs ',' table_ref         { $$ = AppendTableReferenceList(parsingContext, $1, $3); } 
 ;
 
 table_ref:
@@ -116,6 +117,10 @@ expr:
   | expr EQUALITY expr               { $$ = CreateInfixExpression(parsingContext, EXPR_EQU, $1, $3); }
   | expr AND expr                    { $$ = CreateInfixExpression(parsingContext, EXPR_AND, $1, $3); }
   | expr OR expr                     { $$ = CreateInfixExpression(parsingContext, EXPR_OR , $1, $3); }
+;
+
+expr:
+    expr IN '(' select_stmt ')'      { $$ = CreateInExpression(parsingContext, $1, $4); }
 ;
 
 %%

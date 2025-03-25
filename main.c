@@ -9,9 +9,10 @@
 int main(void)
 {
     printf("SystemR\n");
-    //char* sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place WHERE person.address_id = place.id;";
-    char* sql = "SELECT person.name, name, a.name FROM person;";
-    
+    //char *sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place WHERE person.address_id = place.id;";
+    //char *sql = "SELECT person.name, name, a.name FROM person;";
+    char *sql = "SELECT name FROM person WHERE address_id IN (SELECT id FROM address);";
+
     BuildCatalog();
     Arena executionArena = NewArena(EXECUTION_ARENA_SIZE);
     ParsingContext parserContext = ParseSQL(sql, strlen(sql), executionArena);    
