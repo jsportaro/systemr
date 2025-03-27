@@ -9,37 +9,42 @@ typedef enum
     ATTR_CHAR,
 } AttributeType;
 
-typedef struct
+typedef struct Index Index;
+typedef struct Attribute Attribute;
+typedef struct Relation Relation;
+
+struct Index
 {
     const char *columns[MAX_ARRAY_SIZE];
     int columnCount;
-} Index;
+};
 
-typedef struct
+struct Attribute
 {
     const char *name;
+    size_t nameLength;
     AttributeType type;
-} Attribute;
+    int relationId;
+    int next;
+};
 
-typedef struct
+struct Relation
 {
     const char *name;
-
-    Index indices[MAX_ARRAY_SIZE];
     int indexCount;
-
     Attribute attributes[MAX_ARRAY_SIZE];
-    int attributeCount;
-} Relation;
+    bool free;
+};
 
 typedef struct
 {
     Relation relations[MAX_ARRAY_SIZE];
+    Index indices[MAX_ARRAY_SIZE];
+    Attribute attributes[MAX_ARRAY_SIZE];
     int relationCount;
 } Catalog;
 
 void BuildCatalog(void);
-Attribute *FindAttribute(const char *attribute, const char *relation, int *found);
-bool FindRelation(const char *relation, Relation **found);
+Attribute *GetAttribute(const char *relation, const char *attribute, int *count);
 
 #endif

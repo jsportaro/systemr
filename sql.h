@@ -64,6 +64,8 @@ typedef struct
 {
     Expression *expression;
     const char *as;
+
+    Identifier *unresolved;
 } SelectExpression;
 
 typedef struct

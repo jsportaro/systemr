@@ -21,6 +21,17 @@ typedef struct
     PlanNode root;
 } Plan;
 
+typedef struct Selection Selection;
+struct Selection
+{
+    PlanNodeType type;
+
+    Attribute *attribute;
+    Identifier *Identifier;
+
+    Selection *child;
+};
+
 typedef struct
 {
     PlanNodeType type;

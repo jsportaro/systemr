@@ -3,6 +3,7 @@
 
 #include <catalog.h>
 #include <common.h>
+#include <plan.h>
 #include <sql.h>
 
 typedef enum
@@ -21,14 +22,12 @@ typedef struct
 
 typedef struct
 {
-    Identifier *Identifier;
+    Identifier *identifier;
     Attribute *boundAttribute;
     BindingResult bindingResult;
-
     RelationBinding *relation;
 } AttributeBinding;
 
-
-void AttemptBind(ParsingContext *parsingContext);
+Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena executionArena);
 
 #endif

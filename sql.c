@@ -31,7 +31,7 @@ SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext,
     UNUSED(parsingContext);
 
     selectExpressionList->selectList[selectExpressionList->selectListCount++] = selectExpression;
-
+    
     return selectExpressionList;
 }
 
@@ -41,6 +41,9 @@ SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const c
 
     selectExpression->as = as;
     selectExpression->expression = expression;
+    selectExpression->unresolved = parsingContext->unresolved;
+
+    parsingContext->unresolved = NULL;
 
     return selectExpression;
 }
@@ -121,6 +124,6 @@ Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left,
 Expression *AppendWhereExpression(ParsingContext *parsingContext, Expression *where)
 {
     UNUSED(parsingContext);
-    
+
     return where;
 }

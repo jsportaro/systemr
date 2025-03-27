@@ -1,79 +1,80 @@
 #include <arena.h>
+#include <common.h>
 #include <catalog.h>
 
 #include <string.h>
 
-static Catalog catalog;
+static Catalog catalog = {0};
 
-static int AddAttribute(int relation, const char *name, AttributeType type)
+static int AddAttribute(int relationId, const char *name, AttributeType type)
 {
-    int i = catalog.relations[relation].attributeCount++;
+    //  Assumes there will be room
+    int i = Hash(name, strlen(name)) % MAX_ARRAY_SIZE;
+    Attribute *attribute = NULL;
+    printf("%s %d\n", name, i);
+    for (;;)
+    {
+        attribute = &catalog.attributes[i];
+        
+        if (attribute->nameLength == 0)
+        {
+            //  This is empty so break out and assign
+            break;
+        }
 
-    catalog.relations[relation].attributes[i].name = name;
-    catalog.relations[relation].attributes[i].type = type;
+        i = (i + 1) % MAX_ARRAY_SIZE;
+
+        attribute->next = i;
+    }
+    
+    attribute->nameLength = strlen(name);
+    attribute->name = name;
+    attribute->relationId = relationId;
+    attribute->type = type;
+    attribute->next = -1;
 
     return i;
+}
+
+Attribute *GetAttribute(const char *relation, const char *attribute, int *count)
+{
+    int i = Hash(attribute, strlen(attribute)) % MAX_ARRAY_SIZE;
+    Attribute *current = NULL;
+    Attribute *candidate = NULL;
+    for (;;)
+    {
+        current = &catalog.attributes[i];
+        
+        if (current->nameLength == 0)
+        {
+            //  Doesn't exist
+            *count = 0;
+            return NULL;
+        }
+
+        if ((strncmp(attribute, current->name, current->nameLength) == 0) && 
+            ((relation == NULL || strncmp(relation, current->name, current->nameLength) == 0) ))
+        {
+            *count += 1;
+            candidate = current;
+        }
+
+        i = current->next;
+
+        if (i < 0)
+        {
+            return candidate;
+        }
+    }
 }
 
 static int AddRelation(const char *name)
 {
-    int i = catalog.relationCount++;
+    int i = Hash(name, strlen(name)) % MAX_ARRAY_SIZE;
 
     catalog.relations[i].name = name;
 
     return i;
-}
-
-static int NoCmp(const char *s1, const char *s2, size_t n)
-{
-    UNUSED(s1);
-    UNUSED(s2);
-    UNUSED(n);
-
-    return 0;
-}
-
-bool FindRelation(const char *relation, Relation **found)
-{
-    size_t relationLength = strlen(relation);
-    *found = NULL;
-
-    for (int i = 0; i < catalog.relationCount; i++)
-    {
-        if (strncmp(catalog.relations[i].name, relation, relationLength) == 0)
-        {
-            *found = &catalog.relations[i];
-        }
-    }
-
-    return *found != NULL;
-}
-
-Attribute *FindAttribute(const char *attribute, const char *relation, int *found)
-{
-    size_t relationLength = strlen(relation);
-    size_t attributeLength = strlen(relation);
-    Attribute *attr = NULL;
-    int (*cmp)(const char *s1, const char *s2, size_t n);
-
-    cmp = relation == NULL ? &NoCmp : &strncmp;
-
-    for (int i = 0; i < catalog.relationCount; i++)
-    {
-        if (cmp(catalog.relations[i].name, relation, relationLength) == 0)
-        {
-            for (int j = 0; j < catalog.relations[i].attributeCount; j++)
-            {
-                if (strncmp(catalog.relations[i].attributes[j].name, attribute, attributeLength) == 0)
-                {
-                    *found += 1;
-                    attr = &catalog.relations[i].attributes[j];
-                }
-            }
-        }
-    }
-
-    return attr;
 }
 
 void BuildCatalog(void)

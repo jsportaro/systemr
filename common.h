@@ -2,6 +2,7 @@
 #define __SYSTEMR_COMMON_H__
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -9,5 +10,7 @@
 #define EXECUTION_ARENA_SIZE (1<<16)
 
 #define UNUSED(x) (void)(x)
+
+uint32_t Hash(const char* key, int length);
 
 #endif
