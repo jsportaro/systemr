@@ -99,7 +99,8 @@ typedef struct
     Arena parseArena;
     Identifier *unresolved;
 
-    TableReference tableLookup[MAX_HASH_SIZE(MAX_ARRAY_SIZE)];
+    TableReference *tableLookup[MAX_HASH_SIZE];
+    bool success;
 } ParsingContext;
 
 void Finalize(ParsingContext *parsingContext, SelectStatement* selectStatement);
