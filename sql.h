@@ -77,6 +77,7 @@ typedef struct
 typedef struct 
 {
     const char *name;
+    const char *alias;
 } TableReference;
 
 typedef struct
@@ -97,6 +98,8 @@ typedef struct
     SelectStatement *selectStatement;
     Arena parseArena;
     Identifier *unresolved;
+
+    TableReference tableLookup[MAX_HASH_SIZE(MAX_ARRAY_SIZE)];
 } ParsingContext;
 
 void Finalize(ParsingContext *parsingContext, SelectStatement* selectStatement);
@@ -106,8 +109,9 @@ SelectExpressionList *CreateSelectExpressionList(ParsingContext *parsingContext,
 SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, SelectExpression *selectExpression);
 SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const char *as, Expression *expression);
 
-TableReferenceList *CreateTableReferenceList(ParsingContext *parsingContext, const char *tableName);
-TableReferenceList *AppendTableReferenceList(ParsingContext *parsingContext, TableReferenceList *tableReferenceList, const char *tableName);
+TableReferenceList *CreateTableReferenceList(ParsingContext *parsingContext, TableReference *tableReference);
+TableReferenceList *AppendTableReferenceList(ParsingContext *parsingContext, TableReferenceList *tableReferenceList, TableReference *tableReference);
+TableReference *CreateTableReference(ParsingContext *parsingContext, const char *tableName, const char *tableAlias);
 
 Expression *CreateStringExpression(ParsingContext *parsingContext, const char* string);
 Expression *CreateNumberExpression(ParsingContext *parsingContext, long number);

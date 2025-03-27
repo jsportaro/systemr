@@ -49,9 +49,10 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %type <SelectExpressionList *> select_expr_list
 %type <SelectExpression *> select_expr
 %type <TableReferenceList *> table_refs 
-%type <const char *> table_ref
+%type <TableReference *> table_ref
 %type <Expression *> opt_where
 %type <Expression *> expr
+%type <const char *> table_alias
 
 %start sql_start;
 
@@ -85,14 +86,21 @@ select_expr:
   | expr AS "identifier"             { $$ = CreateSelectExpression(parsingContext, $3, $1);   }
   | '*'                              { $$ = NULL;}
 ;
-
+  
 table_refs:
     table_ref                        { $$ = CreateTableReferenceList(parsingContext, $1);     }
   | table_refs ',' table_ref         { $$ = AppendTableReferenceList(parsingContext, $1, $3); } 
 ;
-
+  
 table_ref:
-    "identifier"                     { $$ = $1; }
+    "identifier"                     { $$ = CreateTableReference(parsingContext, $1, NULL); }
+  | "identifier" table_alias         { $$ = CreateTableReference(parsingContext, $1, $2); }
+
+;
+    
+table_alias:
+    AS "identifier"                  { $$ = $2; }
+  | "identifier"                     { $$ = $1; }
 ;
 
 opt_where:

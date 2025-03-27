@@ -48,21 +48,29 @@ SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const c
     return selectExpression;
 }
 
-TableReferenceList *CreateTableReferenceList(ParsingContext *parsingContext, const char *tableName)
+TableReferenceList *CreateTableReferenceList(ParsingContext *parsingContext, TableReference *tableReference)
 {
     TableReferenceList *tableReferenceList = NEW(&parsingContext->parseArena, TableReferenceList);
 
-    return AppendTableReferenceList(parsingContext, tableReferenceList, tableName);;
+    return AppendTableReferenceList(parsingContext, tableReferenceList, tableReference);;
 }
 
-TableReferenceList *AppendTableReferenceList(ParsingContext *parsingContext, TableReferenceList *tableReferenceList, const char *tableName)
+TableReferenceList *AppendTableReferenceList(ParsingContext *parsingContext, TableReferenceList *tableReferenceList, TableReference *tableReference)
+{
+
+    tableReferenceList->tableReferences [tableReferenceList->count++] = tableReference;
+
+    return tableReferenceList;
+}
+
+TableReference *CreateTableReference(ParsingContext *parsingContext, const char *tableName, const char *tableAlias)
 {
     TableReference *tableReference = NEW(&parsingContext->parseArena, TableReference);
 
     tableReference->name = tableName;
-    tableReferenceList->tableReferences [tableReferenceList->count++] = tableReference;
+    tableReference->alias = tableAlias;
 
-    return tableReferenceList;
+    return tableReference;
 }
 
 Expression *CreateStringExpression(ParsingContext *parsingContext, const char* string)
