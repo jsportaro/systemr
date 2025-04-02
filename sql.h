@@ -1,57 +1,11 @@
 #ifndef __SYSTEMR_SQL_H__
 #define __SYSTEMR_SQL_H__
 
-#include <common.h>
 #include <arena.h>
+#include <common.h>
+#include <expressions.h>
 
 typedef struct SelectStatement SelectStatement;
-
-typedef struct Identifier
-{
-    const char *qualifier;
-    const char *name;
-    struct Identifier *next;
-} Identifier;
-
-typedef enum 
-{
-    EXPR_NUMBER,
-    EXPR_STRING,
-    EXPR_IDENIFIER,
-    EXPR_ADD,
-    EXPR_SUB,
-    EXPR_MUL,
-    EXPR_DIV,
-    EXPR_EQU,
-    EXPR_AND,
-    EXPR_OR,
-    EXPR_IN_QUERY,
-} ExpressionType;
-
-typedef struct 
-{
-    ExpressionType type;
-} Expression;
-
-typedef struct 
-{
-    ExpressionType type;
-
-    Expression *left;
-    Expression *right;
-} InfixExpression;
-
-typedef struct 
-{
-    ExpressionType type;
-
-    union 
-    {
-        int number;
-        const char *string;
-        Identifier identifier;
-    } value;
-} TermExpression;
 
 typedef struct
 {
@@ -67,6 +21,13 @@ typedef struct
 
     Identifier *unresolved;
 } SelectExpression;
+
+typedef struct
+{
+    Expression *expression;
+
+    Identifier *unresolved;
+} WhereExpression;
 
 typedef struct
 {
@@ -90,7 +51,7 @@ struct SelectStatement
 {
     SelectExpressionList *selectExpressionList;
     TableReferenceList *tableReferenceList;
-    Expression *whereExpression;
+    WhereExpression *whereExpression;
 };
 
 typedef struct 
@@ -99,12 +60,12 @@ typedef struct
     Arena parseArena;
     Identifier *unresolved;
 
-    TableReference *tableLookup[MAX_HASH_SIZE];
+    TableReference *aliasLookup[MAX_HASH_SIZE];
     bool success;
 } ParsingContext;
 
 void Finalize(ParsingContext *parsingContext, SelectStatement* selectStatement);
-SelectStatement *CreateSelectStatement(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, TableReferenceList *tableReferenceList, Expression *whereExpression);
+SelectStatement *CreateSelectStatement(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, TableReferenceList *tableReferenceList, WhereExpression *whereExpression);
 
 SelectExpressionList *CreateSelectExpressionList(ParsingContext *parsingContext, SelectExpression *selectExpression);
 SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, SelectExpression *selectExpression);
@@ -120,6 +81,6 @@ Expression *CreateIdentifierExpression(ParsingContext *parsingContext, const cha
 Expression *CreateInfixExpression(ParsingContext *parsingContext, ExpressionType expressionType, Expression *left, Expression *right);
 Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left, SelectStatement *selectStatement);
 
-Expression *AppendWhereExpression(ParsingContext *parsingContext, Expression *where);
+WhereExpression *CreateWhereExpression(ParsingContext *parsingContext, Expression *where);
 
 #endif

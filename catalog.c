@@ -94,4 +94,3 @@ void BuildCatalog(void)
     AddAttribute(relation, "zip", ATTR_INT);
     AddAttribute(relation, "id", ATTR_INT);
 }
-

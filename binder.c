@@ -41,7 +41,7 @@ Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena
         while (*c != NULL)
         {
             attribute = GetAttribute((*c)->qualifier, (*c)->name, &count);
-
+            UNUSED(attribute);
             if (count == 1)
             {
                 *c = (*c)->next;

@@ -50,7 +50,7 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %type <SelectExpression *> select_expr
 %type <TableReferenceList *> table_refs 
 %type <TableReference *> table_ref
-%type <Expression *> opt_where
+%type <WhereExpression *> opt_where
 %type <Expression *> expr
 %type <const char *> table_alias
 
@@ -106,7 +106,7 @@ table_alias:
 opt_where:
                                      { $$ = NULL; }
   | WHERE expr                       { 
-                                       $$ = AppendWhereExpression(parsingContext, $2);  
+                                       $$ = CreateWhereExpression(parsingContext, $2);  
                                      }
 ;
 
