@@ -8,13 +8,14 @@ static Catalog catalog = {0};
 
 static int AddAttribute(int relationId, const char *name, AttributeType type)
 {
-    //  Assumes there will be room
-    int i = Hash(name, strlen(name)) % MAX_ARRAY_SIZE;
+    size_t nameLength = strlen(name);
+    int i = Hash(name, nameLength) % MAX_HASH_SIZE;
+    Relation *relation = &catalog.relations[relationId];
     Attribute *attribute = NULL;
-    printf("%s %d\n", name, i);
-    for (;;)
+    
+     for (;;)
     {
-        attribute = &catalog.attributes[i];
+        attribute = &relation->attributes[i];
         
         if (attribute->nameLength == 0)
         {
@@ -22,59 +23,65 @@ static int AddAttribute(int relationId, const char *name, AttributeType type)
             break;
         }
 
-        i = (i + 1) % MAX_ARRAY_SIZE;
-
-        attribute->next = i;
+        i = (i + 1) % MAX_HASH_SIZE;
     }
-    
+
     attribute->nameLength = strlen(name);
     attribute->name = name;
     attribute->relationId = relationId;
     attribute->type = type;
-    attribute->next = -1;
+    attribute->relation = relation;
+
+    catalog.attributes[catalog.attributeCount++] = attribute;
 
     return i;
-}
-
-Attribute *GetAttribute(const char *relation, const char *attribute, int *count)
-{
-    int i = Hash(attribute, strlen(attribute)) % MAX_ARRAY_SIZE;
-    Attribute *current = NULL;
-    Attribute *candidate = NULL;
-    for (;;)
-    {
-        current = &catalog.attributes[i];
-        
-        if (current->nameLength == 0)
-        {
-            //  Doesn't exist
-            *count = 0;
-            return NULL;
-        }
-
-        if ((strncmp(attribute, current->name, current->nameLength) == 0) && 
-            ((relation == NULL || strncmp(relation, current->name, current->nameLength) == 0) ))
-        {
-            *count += 1;
-            candidate = current;
-        }
-
-        i = current->next;
-
-        if (i < 0)
-        {
-            return candidate;
-        }
-    }
 }
 
 static int AddRelation(const char *name)
 {
-    int i = Hash(name, strlen(name)) % MAX_ARRAY_SIZE;
+    size_t length = strlen(name);
+    uint32_t i = Hash(name, length) % MAX_HASH_SIZE;
 
-    catalog.relations[i].name = name;
+    //  If neither name exists, we're good to add.
+    //  However, if a reference already exists in either case then we have a duplicate name collision
+    for (;;)
+    {
+        if (catalog.relations[i].isSet == false)
+        {
+            catalog.relations[i].isSet = true;
+            catalog.relations[i].name = name;
 
-    return i;
+            return i;
+        }
+        else if ((catalog.relations[i].isSet = true) && (strncmp(name, catalog.relations[i].name, length) == 0))
+        {
+            //  Alias already exists
+            return i;
+        }
+
+        i = (i + 1) % MAX_HASH_SIZE;
+    }
+}
+
+Relation *GetRelation(const char *relation)
+{
+    size_t length = strlen(relation);
+    uint32_t i = Hash(relation, length) % MAX_HASH_SIZE;
+
+    for (;;)
+    {
+        if (catalog.relations[i].isSet == false)
+        {
+            return NULL;
+        }
+        else if (strncmp(relation, catalog.relations[i].name, length) == 0)
+        {
+            //  Alias already exists
+            return &catalog.relations[i];
+        }
+
+        i = (i + 1) % MAX_HASH_SIZE;
+    }
 }
 
 void BuildCatalog(void)

@@ -25,26 +25,30 @@ struct Attribute
     size_t nameLength;
     AttributeType type;
     int relationId;
-    int next;
+    Relation *relation;
 };
 
 struct Relation
 {
     const char *name;
-    int indexCount;
-    Attribute attributes[MAX_ARRAY_SIZE];
-    bool free;
+    bool isSet;
+    Attribute attributes[MAX_HASH_SIZE];
 };
 
 typedef struct
 {
     Relation relations[MAX_ARRAY_SIZE];
-    Index indices[MAX_ARRAY_SIZE];
-    Attribute attributes[MAX_ARRAY_SIZE];
     int relationCount;
+
+    Index indices[MAX_ARRAY_SIZE];
+    int indexCount;
+
+    Attribute *attributes[MAX_ARRAY_SIZE];
+    int attributeCount;
 } Catalog;
 
 void BuildCatalog(void);
-Attribute *GetAttribute(const char *relation, const char *attribute, int *count);
+//Attribute *GetAttribute(const char *relation, const char *attribute, int *count);
+Relation *GetRelation(const char *relation);
 
 #endif

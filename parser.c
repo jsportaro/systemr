@@ -35,6 +35,7 @@ static bool VerifyUnresolvedIdentifiers(ParsingContext *parsingContext, Identifi
     //  For identifiers with a qualifier
     //     -> If matches a alias; replace qualifier with table name
     //     -> If matches neither table or alias; error!
+    bool success = true;
     while (unresolved != NULL)
     {
         if (unresolved->qualifier != NULL)
@@ -46,11 +47,13 @@ static bool VerifyUnresolvedIdentifiers(ParsingContext *parsingContext, Identifi
             {
                 if (parsingContext->aliasLookup[i] == NULL)
                 {
-                    return false;
+                    success &= false;
+                    break;
                 }
                 else if (strncmp(unresolved->qualifier, parsingContext->aliasLookup[i]->alias, length) == 0)
                 {
-                    return true;
+                    success &= true;
+                    break;
                 }
 
                 i = (i + 1) % MAX_HASH_SIZE;
@@ -60,7 +63,7 @@ static bool VerifyUnresolvedIdentifiers(ParsingContext *parsingContext, Identifi
         unresolved = unresolved->next;
     }
 
-    return false;
+    return success;
 }
 
 static bool VerifyAliasedSelections(ParsingContext *parsingContext, WhereExpression *where)
@@ -70,7 +73,6 @@ static bool VerifyAliasedSelections(ParsingContext *parsingContext, WhereExpress
 
 static bool VerifyAliasedProjections(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList)
 {
-
     for (int i = 0; i < selectExpressionList->selectListCount; i++)
     {
         SelectExpression *expression = selectExpressionList->selectList[i];

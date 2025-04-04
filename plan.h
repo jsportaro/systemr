@@ -22,14 +22,23 @@ typedef struct
 } Plan;
 
 typedef struct Selection Selection;
+typedef struct Projection Projection;
+
+struct Projection
+{
+    PlanNodeType type;
+    PlanNode *child;
+
+    Attribute *attribute;
+};
+
 struct Selection
 {
     PlanNodeType type;
+    PlanNode *child;
 
     Attribute *attribute;
     Identifier *Identifier;
-
-    Selection *child;
 };
 
 typedef struct

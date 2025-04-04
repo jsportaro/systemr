@@ -8,25 +8,36 @@
 
 typedef enum
 {
+    BIND_UNBOUND,
     BIND_SUCCESS,
     BIND_NOT_FOUND,
+    BIND_CONDITION_NOT_MET,
     BIND_DUPLICATE,
 } BindingResult;
 
-typedef struct
+typedef struct RelationBinding RelationBinding;
+
+struct RelationBinding
 {
     TableReference *tableReference;
     Relation *boundRelation;
     BindingResult bindingResult;
-} RelationBinding;
+};
 
 typedef struct
 {
     Identifier *identifier;
     Attribute *boundAttribute;
     BindingResult bindingResult;
-    RelationBinding *relation;
 } AttributeBinding;
+
+typedef struct
+{
+    ParsingContext *parsingContext;
+
+    Attribute *attributeLookup[MAX_HASH_SIZE];
+    Relation *relationLookup[MAX_HASH_SIZE];
+} BindingContext;
 
 Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena executionArena);
 
