@@ -31,14 +31,8 @@ typedef struct
     BindingResult bindingResult;
 } AttributeBinding;
 
-typedef struct
-{
-    ParsingContext *parsingContext;
 
-    Attribute *attributeLookup[MAX_HASH_SIZE];
-    Relation *relationLookup[MAX_HASH_SIZE];
-} BindingContext;
 
-Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena executionArena);
+Plan *AttemptBind(SelectStatement *selectStatment, Arena *executionArena);
 
 #endif

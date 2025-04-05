@@ -57,7 +57,7 @@ struct SelectStatement
 typedef struct 
 {
     SelectStatement *selectStatement;
-    Arena parseArena;
+    Arena *parseArena;
     Identifier *unresolved;
 
     TableReference *aliasLookup[MAX_HASH_SIZE];

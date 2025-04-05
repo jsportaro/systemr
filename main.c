@@ -15,8 +15,8 @@ int main(void)
 
     BuildCatalog();
     Arena executionArena = NewArena(EXECUTION_ARENA_SIZE);
-    ParsingContext parserContext = ParseSQL(sql, strlen(sql), executionArena);    
-    Plan *plan = AttemptBind(parserContext.selectStatement, NULL, executionArena);
+    ParsingContext parserContext = ParseSQL(sql, strlen(sql), &executionArena);    
+    Plan *plan = AttemptBind(parserContext.selectStatement, &executionArena);
 
     UNUSED(plan);
 

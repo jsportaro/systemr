@@ -4,6 +4,21 @@
 
 #include <string.h>
 
+typedef struct
+{
+    SelectStatement *selectStatment;
+    Arena executionArena;
+
+    RelationBinding relationBindings[MAX_ARRAY_SIZE];
+    int relationBindingsCount;
+
+    AttributeBinding *attributeBindings[MAX_ARRAY_SIZE];
+    int attributeBindingCount;
+
+    RelationBinding *aliasLookup[MAX_HASH_SIZE];
+    AttributeBinding *attributeBindingLookup[MAX_HASH_SIZE];
+} BindingContext;
+
 static AttributeBinding *GetOrAddAttributeBinding(AttributeBinding **attributeBindings, AttributeBinding *binding)
 {
     int i = binding->boundAttribute->hash % MAX_HASH_SIZE;
@@ -17,11 +32,17 @@ static AttributeBinding *GetOrAddAttributeBinding(AttributeBinding **attributeBi
 
         i = (i + 1) % MAX_HASH_SIZE;
     }
+
+    return NULL;
 }
 
-static int BindTableReferences(TableReferenceList *tables, RelationBinding *relationBindings, RelationBinding **aliasLookup)
+static void BindTableReferences(BindingContext *bindingContext)
 {
     int found = 0;
+    TableReferenceList *tables = bindingContext->selectStatment->tableReferenceList;
+    RelationBinding *relationBindings = bindingContext->relationBindings;
+    RelationBinding **aliasLookup = bindingContext->aliasLookup;
+
     for (int i = 0; i < tables->count; i++)
     {
         TableReference *tableReference = tables->tableReferences[i];
@@ -55,7 +76,7 @@ static int BindTableReferences(TableReferenceList *tables, RelationBinding *rela
         }
     }
 
-    return found;
+    bindingContext->relationBindingsCount = found;
 }
 
 static RelationBinding *GetRelationBinding(const char* alias, RelationBinding **aliasLookup)
@@ -101,8 +122,10 @@ static Attribute *GetAttribute(const char *name, RelationBinding *relationBindin
     }
 }
 
-static void AttemptBindWithAlias(Identifier *unresolved, AttributeBinding *attributeBinding, RelationBinding **aliasLookup)
+static void AttemptBindWithAlias(BindingContext *bindingContext, Identifier *unresolved, AttributeBinding *attributeBinding)
 {
+    RelationBinding **aliasLookup = bindingContext->aliasLookup;
+    
     if (unresolved->qualifier == NULL || attributeBinding->bindingResult != BIND_UNBOUND)
     {
         return;
@@ -119,16 +142,21 @@ static void AttemptBindWithAlias(Identifier *unresolved, AttributeBinding *attri
     attributeBinding->bindingResult = BIND_SUCCESS;
     attributeBinding->boundAttribute = attribute;
     attributeBinding->identifier = unresolved;
+
+    //  Add to hash
 }
 
-static void AttemptBindAnyTable(Identifier *unresolved, AttributeBinding *attributeBinding, RelationBinding *relationBindings, int relationCount)
+static void AttemptBindAnyTable(BindingContext *bindingContext, Identifier *unresolved, AttributeBinding *attributeBinding)
 {
+    RelationBinding *relationBindings = bindingContext->relationBindings;
+    int relationBindingsCount = bindingContext->relationBindingsCount;
+
     if (attributeBinding->bindingResult != BIND_UNBOUND)
     {
         return;
     }
 
-    for (int i = 0; i < relationCount; i++)
+    for (int i = 0; i < relationBindingsCount; i++)
     {
         RelationBinding *relationBinding = &relationBindings[i];
         Attribute *attribute = GetAttribute(unresolved->name, relationBinding);
@@ -147,12 +175,28 @@ static void AttemptBindAnyTable(Identifier *unresolved, AttributeBinding *attrib
         attributeBinding->bindingResult = BIND_SUCCESS;
         attributeBinding->boundAttribute = attribute;
         attributeBinding->identifier = unresolved;
+
+    //  Add to hash
     }
 }
 
-static Plan *BindPlanProjections(SelectExpressionList *selectExpressionList, RelationBinding *relationBindings, RelationBinding **aliasLookup, int relationCount, AttributeBinding **attributeBindings)
+#define WHEN_UNBOUND(bindingMethod)                         \
+do {                                                        \
+    if (attributeBinding->bindingResult == BIND_UNBOUND)     \
+    {                                                       \
+        (bindingMethod);                                    \
+    }                                                       \
+} while(false)
+
+static Plan *BindPlanProjections(BindingContext *bindingContext)
 {
     bool success = true;
+
+    SelectExpressionList *selectExpressionList = bindingContext->selectStatment->selectExpressionList;
+    RelationBinding *relationBindings = bindingContext->relationBindings;
+    RelationBinding **aliasLookup = bindingContext->aliasLookup;
+    AttributeBinding **attributeBindings = bindingContext->attributeBindings;
+
     for (int i = 0; i < selectExpressionList->selectListCount; i++)
     {
         SelectExpression *selectExpression = selectExpressionList->selectList[i];
@@ -160,12 +204,12 @@ static Plan *BindPlanProjections(SelectExpressionList *selectExpressionList, Rel
 
         while (*unresolved != NULL)
         {
-            AttributeBinding attributeBinding = { 0 };
+            AttributeBinding *attributeBinding = &bindingContext->attributeBindings[bindingContext->attributeBindingCount++];
 
-            AttemptBindWithAlias(*unresolved, &attributeBinding, aliasLookup);
-            AttemptBindAnyTable(*unresolved, &attributeBinding, relationBindings, relationCount);
+            WHEN_UNBOUND(AttemptBindWithAlias(bindingContext, *unresolved, attributeBinding));
+            WHEN_UNBOUND(AttemptBindAnyTable(bindingContext, *unresolved, attributeBinding));
             
-            if (attributeBinding.bindingResult == BIND_SUCCESS)
+            if (attributeBinding->bindingResult == BIND_SUCCESS)
             {
                 success &= true;
 
@@ -180,16 +224,19 @@ static Plan *BindPlanProjections(SelectExpressionList *selectExpressionList, Rel
     return NULL;
 }
 
-Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena executionArena)
-{
-    
-    Attribute *attributes[MAX_HASH_SIZE] = { 0 };
-    RelationBinding relationBindings[MAX_HASH_SIZE] = { 0 };
-    RelationBinding *aliasLookup[MAX_HASH_SIZE] = { 0 };
-    AttributeBinding *attributeBindings[MAX_HASH_SIZE] = { 0 };
+#undef WHEN_UNBOUND
 
-    int relationCount = BindTableReferences(selectStatment->tableReferenceList, relationBindings, aliasLookup);
-    Plan *projection = BindPlanProjections(selectStatment->selectExpressionList, relationBindings, aliasLookup, relationCount, attributeBindings);
+
+
+Plan *AttemptBind(SelectStatement *selectStatement, Arena *executionArena)
+{
+    BindingContext *bindingContext = NEW(executionArena, BindingContext);
+
+    bindingContext->selectStatment = selectStatement;
+    BindTableReferences(bindingContext);
+    Plan *projection = BindPlanProjections(bindingContext);
+
+    UNUSED(projection);
 
     // Attribute *attribute = NULL;
     // int count = 0;
@@ -212,8 +259,6 @@ Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena
     //     }
     // }
 
-    UNUSED(selectStatment);
-    UNUSED(unresolved);
     UNUSED(executionArena);
 
     return NULL;

@@ -130,7 +130,7 @@ static void ParsePostProcessing(ParsingContext *parsingContext)
 
 }
 
-ParsingContext ParseSQL(const char *sql, size_t length, Arena arena)
+ParsingContext ParseSQL(const char *sql, size_t length, Arena *arena)
 {
     ParsingContext parsingContext = {0};
     parsingContext.parseArena = arena;
