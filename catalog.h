@@ -26,6 +26,7 @@ struct Attribute
     AttributeType type;
     int relationId;
     Relation *relation;
+    uint32_t hash;
 };
 
 struct Relation

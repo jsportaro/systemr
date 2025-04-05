@@ -4,6 +4,21 @@
 
 #include <string.h>
 
+static AttributeBinding *GetOrAddAttributeBinding(AttributeBinding **attributeBindings, AttributeBinding *binding)
+{
+    int i = binding->boundAttribute->hash % MAX_HASH_SIZE;
+
+    for (;;)
+    {
+        if (attributeBindings[i] == NULL)
+        {
+            attributeBindings[i] = binding;
+        }
+
+        i = (i + 1) % MAX_HASH_SIZE;
+    }
+}
+
 static int BindTableReferences(TableReferenceList *tables, RelationBinding *relationBindings, RelationBinding **aliasLookup)
 {
     int found = 0;
@@ -135,7 +150,7 @@ static void AttemptBindAnyTable(Identifier *unresolved, AttributeBinding *attrib
     }
 }
 
-static Plan *BindPlanProjections(SelectExpressionList *selectExpressionList, RelationBinding *relationBindings, RelationBinding **aliasLookup, int relationCount)
+static Plan *BindPlanProjections(SelectExpressionList *selectExpressionList, RelationBinding *relationBindings, RelationBinding **aliasLookup, int relationCount, AttributeBinding **attributeBindings)
 {
     bool success = true;
     for (int i = 0; i < selectExpressionList->selectListCount; i++)
@@ -171,9 +186,10 @@ Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena
     Attribute *attributes[MAX_HASH_SIZE] = { 0 };
     RelationBinding relationBindings[MAX_HASH_SIZE] = { 0 };
     RelationBinding *aliasLookup[MAX_HASH_SIZE] = { 0 };
+    AttributeBinding *attributeBindings[MAX_HASH_SIZE] = { 0 };
 
     int relationCount = BindTableReferences(selectStatment->tableReferenceList, relationBindings, aliasLookup);
-    Plan *projection = BindPlanProjections(selectStatment->selectExpressionList, relationBindings, aliasLookup, relationCount);
+    Plan *projection = BindPlanProjections(selectStatment->selectExpressionList, relationBindings, aliasLookup, relationCount, attributeBindings);
 
     // Attribute *attribute = NULL;
     // int count = 0;
@@ -202,29 +218,3 @@ Plan *AttemptBind(SelectStatement *selectStatment, Identifier *unresolved, Arena
 
     return NULL;
 }
-
-// void AttemptBind(ParsingContext *parsingContext)
-// {
-//     RelationBinding relationBindings[MAX_ARRAY_SIZE * 2] = {0};
-    
-//     for (int i = 0; i < parsingContext->selectStatement->tableReferenceList->count; i++)
-//     {
-//         relationBindings[i].tableReference = parsingContext->selectStatement->tableReferenceList->tableReferences[i];
-
-//         bool found = FindRelation(relationBindings[i].tableReference->name, &relationBindings[i].boundRelation);
-            
-//         relationBindings[i].bindingResult = found == true ? BIND_SUCCESS : BIND_NOT_FOUND;
-
-//         //  Now that we have a table, let's see if they're any columns that match
-//         Identifier **c = &parsingContext->unresolved;
-//         while (*c != NULL)
-//         {
-//             if (CanBindAttribute(*c, relationBindings[i].boundRelation))
-//             {
-//                 *c = (*c)->next;
-//                 continue;
-//             }
-//             c = &(*c)->next;
-//         }
-//     }
-// }

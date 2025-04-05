@@ -6,6 +6,24 @@
 
 static Catalog catalog = {0};
 
+static void ComputeAttributeHash(Attribute *attribute)
+{
+    size_t length = strlen(attribute->name) + strlen(attribute->relation->name);
+    char *buffer = malloc(length);
+
+    if (buffer == NULL)
+    {
+        abort();
+    }
+
+    strcat(buffer, attribute->name);
+    strcat(buffer, attribute->relation->name);
+
+    attribute->hash = Hash(buffer, length);
+
+    free(buffer);
+}
+
 static int AddAttribute(int relationId, const char *name, AttributeType type)
 {
     size_t nameLength = strlen(name);
@@ -31,7 +49,8 @@ static int AddAttribute(int relationId, const char *name, AttributeType type)
     attribute->relationId = relationId;
     attribute->type = type;
     attribute->relation = relation;
-
+    ComputeAttributeHash(attribute);
+    
     catalog.attributes[catalog.attributeCount++] = attribute;
 
     return i;
