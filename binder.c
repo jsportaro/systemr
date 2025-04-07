@@ -1,18 +1,19 @@
 #include <binder.h>
 #include <catalog.h>
 #include <parser.h>
+#include <plan.h>
 
 #include <string.h>
 
 typedef struct
 {
     SelectStatement *selectStatment;
-    Arena executionArena;
+    Arena *executionArena;
 
     RelationBinding relationBindings[MAX_ARRAY_SIZE];
     int relationBindingsCount;
 
-    AttributeBinding *attributeBindings[MAX_ARRAY_SIZE];
+    AttributeBinding attributeBindings[MAX_ARRAY_SIZE];
     int attributeBindingCount;
 
     RelationBinding *aliasLookup[MAX_HASH_SIZE];
@@ -156,45 +157,60 @@ static void AttemptBindAnyTable(BindingContext *bindingContext, Identifier *unre
         return;
     }
 
+    attributeBinding->bindingResult = BIND_NOT_FOUND;
+
     for (int i = 0; i < relationBindingsCount; i++)
     {
         RelationBinding *relationBinding = &relationBindings[i];
         Attribute *attribute = GetAttribute(unresolved->name, relationBinding);
 
-        if (attribute == NULL)
+        if (attribute != NULL)
         {
-            attributeBinding->bindingResult = BIND_NOT_FOUND;
-            abort();
-        }
-        else if (attributeBinding->bindingResult == BIND_SUCCESS)
-        {
-            //  Ambiguous condition
-            abort();
-        }
+            attributeBinding->identifier = unresolved;
 
-        attributeBinding->bindingResult = BIND_SUCCESS;
-        attributeBinding->boundAttribute = attribute;
-        attributeBinding->identifier = unresolved;
-
-    //  Add to hash
+            if (attributeBinding->bindingResult == BIND_SUCCESS)
+            {
+                // duplicate conditions
+                attributeBinding->bindingResult = BIND_DUPLICATE;
+                attributeBinding->boundAttribute = NULL;
+            }
+            else
+            {
+                attributeBinding->bindingResult = BIND_SUCCESS;
+                attributeBinding->boundAttribute = attribute;
+            }
+        }
     }
+}
+
+static Projection *AddProjection(BindingContext *BindingContext, Projection *parent, AttributeBinding *attributeBinding)
+{
+    Projection *projection = NEW(BindingContext->executionArena, Projection);
+
+    projection->type = LPLAN_PROJECT;
+    projection->attributeBinding = attributeBinding;
+
+    if (parent != NULL)
+    {
+        parent->child = projection;
+    }
+
+    return projection;
 }
 
 #define WHEN_UNBOUND(bindingMethod)                         \
 do {                                                        \
-    if (attributeBinding->bindingResult == BIND_UNBOUND)     \
+    if (attributeBinding->bindingResult == BIND_UNBOUND)    \
     {                                                       \
         (bindingMethod);                                    \
     }                                                       \
 } while(false)
 
-static Plan *BindPlanProjections(BindingContext *bindingContext)
+static Projection *BindProjections(BindingContext *bindingContext, Plan *plan)
 {
-    bool success = true;
+    Projection *lastAdded = NULL;
 
     SelectExpressionList *selectExpressionList = bindingContext->selectStatment->selectExpressionList;
-    RelationBinding *relationBindings = bindingContext->relationBindings;
-    RelationBinding **aliasLookup = bindingContext->aliasLookup;
     AttributeBinding **attributeBindings = bindingContext->attributeBindings;
 
     for (int i = 0; i < selectExpressionList->selectListCount; i++)
@@ -209,34 +225,74 @@ static Plan *BindPlanProjections(BindingContext *bindingContext)
             WHEN_UNBOUND(AttemptBindWithAlias(bindingContext, *unresolved, attributeBinding));
             WHEN_UNBOUND(AttemptBindAnyTable(bindingContext, *unresolved, attributeBinding));
             
+            //  Need to handle error case
             if (attributeBinding->bindingResult == BIND_SUCCESS)
             {
-                success &= true;
+                lastAdded = AddProjection(bindingContext, lastAdded, attributeBinding);
 
-                *unresolved = (*unresolved)->next;
-                continue;
+                if (plan->root == NULL)
+                {
+                    plan->root = lastAdded;
+                }
             }
-
-            unresolved = &(*unresolved)->next;
+            else
+            {
+                abort();
+            }
+            *unresolved = (*unresolved)->next;
         }
     }
 
-    return NULL;
+    return lastAdded;
+}
+
+static Selection *BindSelection(BindingContext *bindingContext)
+{
+    Selection *selection = NEW(bindingContext->executionArena, Selection);
+
+    Identifier **unresolved = &bindingContext->selectStatment->whereExpression->unresolved;
+    
+    while (*unresolved != NULL)
+    {
+        AttributeBinding *attributeBinding = &bindingContext->attributeBindings[bindingContext->attributeBindingCount++];
+
+        WHEN_UNBOUND(AttemptBindWithAlias(bindingContext, *unresolved, attributeBinding));
+        WHEN_UNBOUND(AttemptBindAnyTable(bindingContext, *unresolved, attributeBinding));
+        
+        //  Need to handle error case
+        if (attributeBinding->bindingResult == BIND_SUCCESS)
+        {
+            lastAdded = AddProjection(bindingContext, lastAdded, attributeBinding);
+
+            if (plan->root == NULL)
+            {
+                plan->root = lastAdded;
+            }
+        }
+        else
+        {
+            abort();
+        }
+        *unresolved = (*unresolved)->next;
+    }
+
+    return selection;
 }
 
 #undef WHEN_UNBOUND
 
 
 
-Plan *AttemptBind(SelectStatement *selectStatement, Arena *executionArena)
+struct Plan *AttemptBind(SelectStatement *selectStatement, Arena *executionArena)
 {
     BindingContext *bindingContext = NEW(executionArena, BindingContext);
-
+    Plan *plan = NEW(executionArena, Plan);
+    bindingContext->executionArena = executionArena;
     bindingContext->selectStatment = selectStatement;
     BindTableReferences(bindingContext);
-    Plan *projection = BindPlanProjections(bindingContext);
-
-    UNUSED(projection);
+    
+    Projection *projection = BindProjections(bindingContext, plan);
+    projection->child = BindSelection(bindingContext);
 
     // Attribute *attribute = NULL;
     // int count = 0;
@@ -259,7 +315,5 @@ Plan *AttemptBind(SelectStatement *selectStatement, Arena *executionArena)
     //     }
     // }
 
-    UNUSED(executionArena);
-
-    return NULL;
+    return plan;
 }

@@ -3,8 +3,9 @@
 
 #include <catalog.h>
 #include <common.h>
-#include <plan.h>
 #include <sql.h>
+
+struct Plan;
 
 typedef enum
 {
@@ -31,8 +32,6 @@ typedef struct
     BindingResult bindingResult;
 } AttributeBinding;
 
-
-
-Plan *AttemptBind(SelectStatement *selectStatment, Arena *executionArena);
+struct Plan *AttemptBind(SelectStatement *selectStatment, Arena *executionArena);
 
 #endif

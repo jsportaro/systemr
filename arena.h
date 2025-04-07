@@ -13,6 +13,7 @@
 
 typedef struct 
 {
+    char *original;
     char *begin;
     char *end;
 } Arena;

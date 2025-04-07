@@ -2,10 +2,12 @@
 #define __SYSTEMR_PLAN_H__
 
 #include <catalog.h>
+#include <binder.h>
 #include <sql.h>
 
 typedef enum
 {
+    PLAN_ROOT,
     PLAN_JOIN,
     LPLAN_SELECT,
     LPLAN_PROJECT,
@@ -18,7 +20,7 @@ typedef struct
 
 typedef struct
 {
-    PlanNode root;
+    PlanNode *root;
 } Plan;
 
 typedef struct Selection Selection;
@@ -29,7 +31,7 @@ struct Projection
     PlanNodeType type;
     PlanNode *child;
 
-    Attribute *attribute;
+    AttributeBinding *attributeBinding;
 };
 
 struct Selection
@@ -37,8 +39,7 @@ struct Selection
     PlanNodeType type;
     PlanNode *child;
 
-    Attribute *attribute;
-    Identifier *Identifier;
+    Expression *condition;
 };
 
 typedef struct

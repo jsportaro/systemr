@@ -13,7 +13,7 @@ Arena NewArena(ptrdiff_t capacity)
 {
     Arena a = {0};
 
-    a.begin = malloc(capacity);
+    a.begin = a.original = malloc(capacity);
     a.end = a.begin ? a.begin + capacity : 0;
     
     return a;
