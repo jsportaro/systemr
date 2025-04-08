@@ -49,35 +49,38 @@ SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const c
     return selectExpression;
 }
 
-TableReferenceList *CreateTableReferenceList(ParsingContext *parsingContext, TableReference *tableReference)
+PlanNode *ScanToPlan(ParsingContext *parsingContext, LogicalScan *scan)
 {
-    TableReferenceList *tableReferenceList = NEW(parsingContext->parseArena, TableReferenceList);
-
-    return AppendTableReferenceList(parsingContext, tableReferenceList, tableReference);;
+    return (PlanNode *)scan;
 }
 
-TableReferenceList *AppendTableReferenceList(ParsingContext *parsingContext, TableReferenceList *tableReferenceList, TableReference *tableReference)
+PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, PlanNode *right)
 {
-    UNUSED(parsingContext);
+    LogicalJoin *join = NEW(parsingContext->parseArena, LogicalJoin);
 
-    tableReferenceList->tableReferences [tableReferenceList->count++] = tableReference;
-
-    return tableReferenceList;
+    join->left = left;
+    join->right = right;
+    join->type = LPLAN_JOIN;
+    
+    return join;
 }
 
-TableReference *CreateTableReference(ParsingContext *parsingContext, const char *tableName, const char *tableAlias)
+LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, const char *tableAlias)
 {
-    TableReference *tableReference = NEW(parsingContext->parseArena, TableReference);
+    LogicalScan *scan = NEW(parsingContext->parseArena, LogicalScan);
 
-    tableReference->name = tableName;
+    scan->name = tableName;
+    scan->type = LPLAN_SCAN;
+    scan->next = parsingContext->lastScan;
+    parsingContext->lastScan = scan;
 
     //  Rewrite to force all table references to have an alias
     //  Helps reduce string compares later when matching alias to tables
     //  For example:
     //      SELECT table1.col1 From table1
-    tableReference->alias = tableAlias == NULL ? tableName : tableAlias;
+    scan->alias = tableAlias == NULL ? tableName : tableAlias;
 
-    return tableReference;
+    return scan;
 }
 
 Expression *CreateStringExpression(ParsingContext *parsingContext, const char* string)
@@ -136,14 +139,15 @@ Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left,
     return (Expression *)expression;
 }
 
-WhereExpression *CreateWhereExpression(ParsingContext *parsingContext, Expression *where)
+LogicalSelection *CreateSelection(ParsingContext *parsingContext, Expression *where)
 {
-    WhereExpression *whereExpression = NEW(parsingContext->parseArena, WhereExpression);
+    LogicalSelection *selection = NEW(parsingContext->parseArena, LogicalSelection);
 
-    whereExpression->expression = where;
-    whereExpression->unresolved = parsingContext->unresolved;
+    selection->condition = where;
+    selection->unresolved = parsingContext->unresolved;
+    selection->type = LPLAN_SELECT;
 
     parsingContext->unresolved = NULL;
 
-    return whereExpression;
+    return selection;
 }

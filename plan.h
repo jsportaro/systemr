@@ -5,12 +5,14 @@
 #include <binder.h>
 #include <sql.h>
 
-typedef enum
+typedef enum PlanNodeType
 {
     PLAN_ROOT,
     PLAN_JOIN,
     LPLAN_SELECT,
     LPLAN_PROJECT,
+    LPLAN_JOIN,
+    LPLAN_SCAN,
 } PlanNodeType;
 
 typedef struct
@@ -26,12 +28,15 @@ typedef struct
 typedef struct Selection Selection;
 typedef struct Projection Projection;
 
+typedef struct LogicalProjection LogicalProjection;
+typedef struct LogicalSelection LogicalSelection;
+typedef struct LogicalJoin LogicalJoin;
+typedef struct LogicalScan LogicalScan;
+
 struct Projection
 {
     PlanNodeType type;
     PlanNode *child;
-
-    AttributeBinding *attributeBinding;
 };
 
 struct Selection
@@ -42,14 +47,42 @@ struct Selection
     Expression *condition;
 };
 
-typedef struct
+struct LogicalProjection
+{
+    PlanNodeType type;
+    PlanNode *child;
+
+    Expression *expression;
+    Identifier *unresolved;
+};
+
+struct LogicalSelection
+{
+    PlanNodeType type;
+    PlanNode *child;
+
+    Expression *condition;
+    Identifier *unresolved;
+};
+
+struct LogicalJoin
 {
     PlanNodeType type;
 
-    Attribute *left;
-    Attribute *right;
+    PlanNode *left;
+    PlanNode *right;
 
     Expression *joinBy;
-} LogicalJoin;
+};
+
+struct LogicalScan
+{
+    PlanNodeType type;
+
+    const char *name;
+    const char *alias;
+
+    LogicalScan *next;
+};
 
 #endif

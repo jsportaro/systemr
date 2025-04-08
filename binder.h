@@ -20,7 +20,7 @@ typedef struct RelationBinding RelationBinding;
 
 struct RelationBinding
 {
-    TableReference *tableReference;
+    //TableReference *tableReference;
     Relation *boundRelation;
     BindingResult bindingResult;
 };
@@ -32,6 +32,6 @@ typedef struct
     BindingResult bindingResult;
 } AttributeBinding;
 
-struct Plan *AttemptBind(SelectStatement *selectStatment, Arena *executionArena);
+//struct Plan *AttemptBind(SelectStatement *selectStatment, Arena *executionArena);
 
 #endif

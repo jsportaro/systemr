@@ -23,7 +23,7 @@ static void PrettyPrintPlan(PlanNode **c)
             Projection *project = (Projection *)*c;
             c = &(project)->child;
 
-            printf("(Project (%s->%s))\n", project->attributeBinding->boundAttribute->relation->name, project->attributeBinding->boundAttribute->name);
+            //printf("(Project (%s->%s))\n", project->attributeBinding->boundAttribute->relation->name, project->attributeBinding->boundAttribute->name);
             PrettyPrintPlan(c);
             break;
         }
@@ -39,7 +39,7 @@ static void PrettyPrintPlan(PlanNode **c)
 int main(void)
 {
     printf("SystemR\n");
-    char *sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place WHERE person.address_id = place.id;";
+    char *sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place, thing WHERE person.address_id = place.id;";
     //char *sql = "SELECT person.name, name, a.name FROM person;";
     //char *sql = "SELECT p.name, age FROM person p WHERE p.name = 'joe';";
 

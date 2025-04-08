@@ -7,6 +7,7 @@
 
 %{
 #include <sql.h>
+#include <plan.h>
 #include <parser.gen.h>
 #include <lexer.gen.h>
 #include <stdlib.h>
@@ -48,9 +49,9 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %type <SelectStatement *> select_stmt
 %type <SelectExpressionList *> select_expr_list
 %type <SelectExpression *> select_expr
-%type <TableReferenceList *> table_refs 
-%type <TableReference *> table_ref
-%type <WhereExpression *> opt_where
+%type <PlanNode *> table_refs 
+%type <LogicalScan *> table_ref
+%type <LogicalSelection *> opt_where
 %type <Expression *> expr
 %type <const char *> table_alias
 
@@ -88,13 +89,13 @@ select_expr:
 ;
   
 table_refs:
-    table_ref                        { $$ = CreateTableReferenceList(parsingContext, $1);     }
-  | table_refs ',' table_ref         { $$ = AppendTableReferenceList(parsingContext, $1, $3); } 
+    table_ref                        { $$ = ScanToPlan(parsingContext, $1);     }
+  | table_refs ',' table_ref         { $$ = CreateJoin(parsingContext, $1, $3); } 
 ;
   
 table_ref:
-    "identifier"                     { $$ = CreateTableReference(parsingContext, $1, NULL); }
-  | "identifier" table_alias         { $$ = CreateTableReference(parsingContext, $1, $2); }
+    "identifier"                     { $$ = CreateScan(parsingContext, $1, NULL); }
+  | "identifier" table_alias         { $$ = CreateScan(parsingContext, $1, $2); }
 
 ;
     
@@ -106,7 +107,7 @@ table_alias:
 opt_where:
                                      { $$ = NULL; }
   | WHERE expr                       { 
-                                       $$ = CreateWhereExpression(parsingContext, $2);  
+                                       $$ = CreateSelection(parsingContext, $2);  
                                      }
 ;
 

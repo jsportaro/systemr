@@ -55,7 +55,7 @@ static void BindTableReferences(BindingContext *bindingContext)
             abort();
         }
 
-        relationBindings[found].tableReference = tableReference;
+        //relationBindings[found].tableReference = tableReference;
         relationBindings[found].boundRelation = relation;
         size_t aliasLength = strlen(tableReference->alias);
         int i = Hash(tableReference->alias, aliasLength) % MAX_HASH_SIZE;
@@ -67,11 +67,11 @@ static void BindTableReferences(BindingContext *bindingContext)
 
                 break;
             }
-            else if (strncmp(relationBindings[found].tableReference->alias, aliasLookup[i]->tableReference->alias, aliasLength) == 0)
-            {
-                // Already have an alias by this name
-                abort();
-            }
+            // else if (strncmp(relationBindings[found].tableReference->alias, aliasLookup[i]->tableReference->alias, aliasLength) == 0)
+            // {
+            //     // Already have an alias by this name
+            //     abort();
+            // }
 
             i = (i + 1) % MAX_HASH_SIZE;
         }
@@ -188,7 +188,7 @@ static Projection *AddProjection(BindingContext *BindingContext, Projection *par
     Projection *projection = NEW(BindingContext->executionArena, Projection);
 
     projection->type = LPLAN_PROJECT;
-    projection->attributeBinding = attributeBinding;
+    //projection->attributeBinding = attributeBinding;
 
     if (parent != NULL)
     {
@@ -262,12 +262,7 @@ static Selection *BindSelection(BindingContext *bindingContext)
         //  Need to handle error case
         if (attributeBinding->bindingResult == BIND_SUCCESS)
         {
-            lastAdded = AddProjection(bindingContext, lastAdded, attributeBinding);
-
-            if (plan->root == NULL)
-            {
-                plan->root = lastAdded;
-            }
+            
         }
         else
         {

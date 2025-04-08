@@ -4,6 +4,7 @@
 #include <arena.h>
 #include <common.h>
 #include <expressions.h>
+#include <plan.h>
 
 typedef struct SelectStatement SelectStatement;
 
@@ -62,6 +63,7 @@ typedef struct
 
     TableReference *aliasLookup[MAX_HASH_SIZE];
     bool success;
+    LogicalScan *lastScan;
 } ParsingContext;
 
 void Finalize(ParsingContext *parsingContext, SelectStatement* selectStatement);
@@ -71,9 +73,10 @@ SelectExpressionList *CreateSelectExpressionList(ParsingContext *parsingContext,
 SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, SelectExpression *selectExpression);
 SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const char *as, Expression *expression);
 
-TableReferenceList *CreateTableReferenceList(ParsingContext *parsingContext, TableReference *tableReference);
-TableReferenceList *AppendTableReferenceList(ParsingContext *parsingContext, TableReferenceList *tableReferenceList, TableReference *tableReference);
-TableReference *CreateTableReference(ParsingContext *parsingContext, const char *tableName, const char *tableAlias);
+PlanNode *ScanToPlan(ParsingContext *parsingContext, LogicalScan *scan);
+PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, PlanNode *right);       
+
+LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, const char *tableAlias);
 
 Expression *CreateStringExpression(ParsingContext *parsingContext, const char* string);
 Expression *CreateNumberExpression(ParsingContext *parsingContext, long number);
@@ -81,6 +84,6 @@ Expression *CreateIdentifierExpression(ParsingContext *parsingContext, const cha
 Expression *CreateInfixExpression(ParsingContext *parsingContext, ExpressionType expressionType, Expression *left, Expression *right);
 Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left, SelectStatement *selectStatement);
 
-WhereExpression *CreateWhereExpression(ParsingContext *parsingContext, Expression *where);
+LogicalSelection *CreateSelection(ParsingContext *parsingContext, Expression *where);
 
 #endif

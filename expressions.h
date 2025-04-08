@@ -1,11 +1,14 @@
 #ifndef __SYSTEMR_EXPRESSION_H__
 #define __SYSTEMR_EXPRESSION_H__
 
+#include <catalog.h>
+
 typedef struct Identifier
 {
     const char *qualifier;
     const char *name;
     struct Identifier *next;
+    Attribute *attribute;
 } Identifier;
 
 typedef enum 
