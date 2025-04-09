@@ -3,7 +3,6 @@
 
 #include <arena.h>
 #include <common.h>
-#include <expressions.h>
 #include <plan.h>
 
 typedef struct SelectStatement SelectStatement;
@@ -12,7 +11,7 @@ typedef struct
 {
     ExpressionType type;
     Expression *left;
-    SelectStatement *query;
+    Plan *plan;
 } InQueryExpression;
 
 typedef struct 
@@ -44,6 +43,13 @@ typedef struct
 
 typedef struct
 {
+   LogicalProjection *first;
+   LogicalProjection *last;
+} LogicalProjections;
+
+
+typedef struct
+{
     TableReference *tableReferences[MAX_ARRAY_SIZE];
     int count;
 } TableReferenceList;
@@ -57,24 +63,26 @@ struct SelectStatement
 
 typedef struct 
 {
-    SelectStatement *selectStatement;
+    bool success;
+    Plan *plan;
+    LogicalScan *scans;
     Arena *parseArena;
     Identifier *unresolved;
-
-    TableReference *aliasLookup[MAX_HASH_SIZE];
-    bool success;
-    LogicalScan *lastScan;
+    bool allAttributes;
+    LogicalScan *aliasLookup[MAX_HASH_SIZE];
 } ParsingContext;
 
-void Finalize(ParsingContext *parsingContext, SelectStatement* selectStatement);
-SelectStatement *CreateSelectStatement(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, TableReferenceList *tableReferenceList, WhereExpression *whereExpression);
+void Finalize(ParsingContext *parsingContext, Plan* plan);
 
-SelectExpressionList *CreateSelectExpressionList(ParsingContext *parsingContext, SelectExpression *selectExpression);
-SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, SelectExpression *selectExpression);
-SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const char *as, Expression *expression);
+Plan *CreatePlan(ParsingContext *parsingContext, LogicalProjections *projections, PlanNode *tables, LogicalSelection *selection);
 
-PlanNode *ScanToPlan(ParsingContext *parsingContext, LogicalScan *scan);
-PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, PlanNode *right);       
+LogicalProjections *BeginProjections(ParsingContext *parsingContext, LogicalProjection *first);
+LogicalProjections *LinkProjection(LogicalProjections *projections, LogicalProjection *next);
+LogicalProjection *CreateProjection(ParsingContext *parsingContext, const char *as, Expression *expression);
+LogicalProjection *CreateProjectionAll(ParsingContext *parsingContext);
+
+PlanNode *ScanToPlan(LogicalScan *scan);
+PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, LogicalScan *right);       
 
 LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, const char *tableAlias);
 
@@ -82,7 +90,7 @@ Expression *CreateStringExpression(ParsingContext *parsingContext, const char* s
 Expression *CreateNumberExpression(ParsingContext *parsingContext, long number);
 Expression *CreateIdentifierExpression(ParsingContext *parsingContext, const char* qualifier, const char* name);
 Expression *CreateInfixExpression(ParsingContext *parsingContext, ExpressionType expressionType, Expression *left, Expression *right);
-Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left, SelectStatement *selectStatement);
+Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left, Plan *plan);
 
 LogicalSelection *CreateSelection(ParsingContext *parsingContext, Expression *where);
 

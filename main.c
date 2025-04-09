@@ -7,30 +7,44 @@
 #include <stdio.h>
 #include <string.h>
 
-static void PrettyPrintPlan(PlanNode **c)
+static void PrettyPrintPlan(PlanNode *c)
 {
-    printf("    |\n");
 
 
-    if (*c == NULL)
+    if (c == NULL)
     {
         return;
     }
 
-    switch ((*c)->type)
+    switch (c->type)
     {
         case LPLAN_PROJECT: {
-            Projection *project = (Projection *)*c;
-            c = &(project)->child;
-
-            //printf("(Project (%s->%s))\n", project->attributeBinding->boundAttribute->relation->name, project->attributeBinding->boundAttribute->name);
-            PrettyPrintPlan(c);
+            LogicalProjection *project = (LogicalProjection *)c;
+            printf("    |\n");
+            printf("(Project)\n");
+            PrettyPrintPlan(project->child);
             break;
         }
         case LPLAN_SELECT: {
-            Selection *project = (Selection *)*c;
-            c = &(project)->child;
-            PrettyPrintPlan(c);
+            LogicalSelection *select = (LogicalSelection *)c;
+            printf("    |\n");
+            printf("Selection\n");
+            PrettyPrintPlan(select->child);
+            break;
+        }
+        case LPLAN_JOIN: {
+            LogicalJoin *join = (LogicalJoin *)c;
+            printf("    |\n");
+            printf("Join\n");
+            printf(" |   \\\n");
+            PrettyPrintPlan(join->left);
+            PrettyPrintPlan(join->right);
+            printf("\n");
+            break;
+        }
+        case LPLAN_SCAN: {
+            LogicalScan *scan = (LogicalScan*)c;
+            printf(" Scan %s", scan->name);
             break;
         }
     }
@@ -39,23 +53,26 @@ static void PrettyPrintPlan(PlanNode **c)
 int main(void)
 {
     printf("SystemR\n");
-    char *sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place, thing WHERE person.address_id = place.id;";
-    //char *sql = "SELECT person.name, name, a.name FROM person;";
+    //char *sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place, thing WHERE person.address_id = place.id;";
+    char *sql = "SELECT person.name, name, a.name, * FROM person;";
     //char *sql = "SELECT p.name, age FROM person p WHERE p.name = 'joe';";
 
     BuildCatalog();
     Arena executionArena = NewArena(EXECUTION_ARENA_SIZE);
-    ParsingContext parserContext = ParseSQL(sql, strlen(sql), &executionArena);    
-    Plan *plan = AttemptBind(parserContext.selectStatement, &executionArena);
+    ParsingContext parsingContext = { 0 };
+    parsingContext.parseArena = &executionArena;
 
-    PlanNode **c = &plan->root;
-    PrettyPrintPlan(c);
+    ParseSQL(&parsingContext, sql, strlen(sql));
+
+    printf("Parsing %s\n", parsingContext.success == true ? "success" : "failure");
+
+    //Plan *plan = AttemptBind(parserContext.selectStatement, &executionArena);
+
+    //PrettyPrintPlan(parsingContext.plan->root);
 
     free(executionArena.original);
     executionArena.begin = NULL;
     executionArena.end = NULL;
-
-    UNUSED(parserContext);
 
     return 0;
 }

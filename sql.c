@@ -4,65 +4,86 @@
 #include <string.h>
 
 
-void Finalize(ParsingContext *parsingContext, SelectStatement* selectStatement)
+void Finalize(ParsingContext *parsingContext, Plan* plan)
 {
-    parsingContext->selectStatement = selectStatement;
+    parsingContext->plan = plan;
 }
 
-SelectStatement *CreateSelectStatement(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, TableReferenceList *tableReferenceList, WhereExpression *whereExpression)
+Plan *CreatePlan(ParsingContext *parsingContext, LogicalProjections *projections, PlanNode *tables, LogicalSelection *selection)
 {
-    SelectStatement *selectStatement = NEW(parsingContext->parseArena, SelectStatement);
+    Plan *plan = NEW(parsingContext->parseArena, Plan);
 
-    selectStatement->selectExpressionList = selectExpressionList;
-    selectStatement->tableReferenceList = tableReferenceList;
-    selectStatement->whereExpression = whereExpression;
+    plan->root = (PlanNode *)projections->first;
+    projections->last->child = (PlanNode *)selection;
 
-    return selectStatement;
+    if (selection != NULL)
+    {
+        selection->child = tables;
+    }
+    else
+    {
+        projections->last->child = tables;
+    }
+
+    return plan;
 }
 
-SelectExpressionList *CreateSelectExpressionList(ParsingContext *parsingContext, SelectExpression *selectExpression)
+LogicalProjections *BeginProjections(ParsingContext *parsingContext, LogicalProjection *first)
 {
-    SelectExpressionList *selectExpressionList = NEW(parsingContext->parseArena, SelectExpressionList);
+    LogicalProjections *projections = NEW(parsingContext->parseArena, LogicalProjections);
 
-    return AppendSelectExpressionList(parsingContext, selectExpressionList, selectExpression);;
+    projections->first = first;
+    projections->last = first;
+
+    return projections;
 }
 
-SelectExpressionList *AppendSelectExpressionList(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList, SelectExpression *selectExpression)
+LogicalProjections *LinkProjection(LogicalProjections *projections, LogicalProjection *next)
 {
-    UNUSED(parsingContext);
+    projections->last->child = (PlanNode *)next;
+    projections->last = next;
+    return projections;
+}
 
-    selectExpressionList->selectList[selectExpressionList->selectListCount++] = selectExpression;
+LogicalProjection *CreateProjectionAll(ParsingContext *parsingContext)
+{
+    LogicalProjection *projection = NEW(parsingContext->parseArena, LogicalProjection);
     
-    return selectExpressionList;
+    parsingContext->allAttributes = true;
+    projection->type = LPLAN_PROJECT_ALL;
+    
+    return projection;
 }
 
-SelectExpression *CreateSelectExpression(ParsingContext *parsingContext, const char *as, Expression *expression)
+LogicalProjection *CreateProjection(ParsingContext *parsingContext, const char *as, Expression *expression)
 {
-    SelectExpression *selectExpression = NEW(parsingContext->parseArena, SelectExpression);
+    UNUSED(as);
 
-    selectExpression->as = as;
-    selectExpression->expression = expression;
-    selectExpression->unresolved = parsingContext->unresolved;
+    LogicalProjection *projection = NEW(parsingContext->parseArena, LogicalProjection);
 
+    projection->projected = expression;
+    projection->type = LPLAN_PROJECT;
+    projection->unresolved = parsingContext->unresolved;
+    
     parsingContext->unresolved = NULL;
 
-    return selectExpression;
+    return projection;
 }
 
-PlanNode *ScanToPlan(ParsingContext *parsingContext, LogicalScan *scan)
+PlanNode *ScanToPlan(LogicalScan *scan)
 {
     return (PlanNode *)scan;
 }
 
-PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, PlanNode *right)
+PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, LogicalScan *right)
 {
     LogicalJoin *join = NEW(parsingContext->parseArena, LogicalJoin);
 
     join->left = left;
-    join->right = right;
+    join->right = (PlanNode *)right;
     join->type = LPLAN_JOIN;
     
-    return join;
+    return (PlanNode *)join;
 }
 
 LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, const char *tableAlias)
@@ -71,8 +92,8 @@ LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, c
 
     scan->name = tableName;
     scan->type = LPLAN_SCAN;
-    scan->next = parsingContext->lastScan;
-    parsingContext->lastScan = scan;
+    scan->next = parsingContext->scans;
+    parsingContext->scans = scan;
 
     //  Rewrite to force all table references to have an alias
     //  Helps reduce string compares later when matching alias to tables
@@ -128,12 +149,12 @@ Expression *CreateInfixExpression(ParsingContext *parsingContext, ExpressionType
     return (Expression *)expression;
 }
 
-Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left, SelectStatement *selectStatement)
+Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left, Plan *plan)
 {
     InQueryExpression *expression = NEW(parsingContext->parseArena, InQueryExpression);
 
     expression->left = left;
-    expression->query = selectStatement;
+    expression->plan = plan;
     expression->type = EXPR_IN_QUERY;
 
     return (Expression *)expression;

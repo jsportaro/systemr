@@ -4,7 +4,7 @@
 #include <parser.gen.h>
 #include <lexer.gen.h>
 
-static bool AddAliasLookup(ParsingContext *parsingContext, TableReference *tableReference, const char *alias)
+static bool AddAliasLookup(ParsingContext *parsingContext, LogicalScan *scan, const char *alias)
 {
     size_t aliasLength = strlen(alias);
     uint32_t i = Hash(alias, aliasLength) % MAX_HASH_SIZE;
@@ -15,7 +15,7 @@ static bool AddAliasLookup(ParsingContext *parsingContext, TableReference *table
     {
         if (parsingContext->aliasLookup[i] == NULL)
         {
-            parsingContext->aliasLookup[i] = tableReference;
+            parsingContext->aliasLookup[i] = scan;
 
             return true;
         }
@@ -26,6 +26,20 @@ static bool AddAliasLookup(ParsingContext *parsingContext, TableReference *table
         }
 
         i = (i + 1) % MAX_HASH_SIZE;
+    }
+}
+
+static void BuildAliasLookup(ParsingContext *parsingContext)
+{
+    LogicalScan *scan = parsingContext->scans;
+    bool wasAdded = false;
+
+    while (scan != NULL)
+    {
+        parsingContext->success &= wasAdded = AddAliasLookup(parsingContext, scan, scan->alias);
+
+        //  Todo:  Add some kind of messaging
+        scan = scan->next;
     }
 }
 
@@ -66,28 +80,34 @@ static bool VerifyUnresolvedIdentifiers(ParsingContext *parsingContext, Identifi
     return success;
 }
 
-static bool VerifyAliasedSelections(ParsingContext *parsingContext, WhereExpression *where)
+static bool VerifyAliasedSelections(ParsingContext *parsingContext, LogicalSelection *selection)
 {
-    return VerifyUnresolvedIdentifiers(parsingContext, where->unresolved);
-}
-
-static bool VerifyAliasedProjections(ParsingContext *parsingContext, SelectExpressionList *selectExpressionList)
-{
-    for (int i = 0; i < selectExpressionList->selectListCount; i++)
+    if (selection != NULL)
     {
-        SelectExpression *expression = selectExpressionList->selectList[i];
-        if (expression->unresolved != NULL)
-        {
-            if (VerifyUnresolvedIdentifiers(parsingContext, expression->unresolved) == false)
-            {
-                //  Error state
-                //  Todo: Figure out how to communicate errors
-                abort();
-            }
-        }
+        return VerifyUnresolvedIdentifiers(parsingContext, selection->unresolved);
     }
 
     return true;
+}
+
+static bool VerifyAliasedProjections(ParsingContext *parsingContext, LogicalSelection **selection)
+{
+    PlanNode *node = parsingContext->plan->root;
+    bool verified = true;
+    while (node->type == LPLAN_PROJECT_ALL || node->type == LPLAN_PROJECT)
+    {
+        LogicalProjection *projection = (LogicalProjection *)node;
+
+        verified &= VerifyUnresolvedIdentifiers(parsingContext, projection->unresolved);
+        node = projection->child;
+    }
+
+    if (node->type == LPLAN_SELECT)
+    {
+        *selection = (LogicalSelection *)node;
+    }
+
+    return verified;
 }
 
 static void ParseBaseGrammar(ParsingContext *parsingContext, const char *sql, size_t length)
@@ -96,7 +116,8 @@ static void ParseBaseGrammar(ParsingContext *parsingContext, const char *sql, si
     
     if(yylex_init(&scanInfo))
     {
-        abort();
+        parsingContext->success = false;
+        return;
     }
 
     yy_scan_bytes(sql, length, scanInfo);
@@ -106,45 +127,31 @@ static void ParseBaseGrammar(ParsingContext *parsingContext, const char *sql, si
 
 static void ParsePostProcessing(ParsingContext *parsingContext)
 {
-    SelectStatement *select = parsingContext->selectStatement;
-    bool wasAdded = false;
+    LogicalSelection *selection = NULL;
+    parsingContext->success = true;
 
-    for (int i = 0; i < select->tableReferenceList->count; i++)
-    {
-        TableReference *tableReference = select->tableReferenceList->tableReferences[i];
-        parsingContext->success &= wasAdded = AddAliasLookup(parsingContext, tableReference, tableReference->alias);
-
-        if (wasAdded == false)
-        {
-            //  Attempt to add the same alias
-            abort();
-        }
-    }
+    BuildAliasLookup(parsingContext);
 
     // Check to make sure any identifiers like 'alias.column' actually use a 
     // alias present in the from clause
-    parsingContext->success &= VerifyAliasedProjections(parsingContext, select->selectExpressionList);
-    parsingContext->success &= VerifyAliasedSelections(parsingContext, select->whereExpression);
+    parsingContext->success &= VerifyAliasedProjections(parsingContext, &selection);
+    parsingContext->success &= VerifyAliasedSelections(parsingContext, selection);
 
     memset(parsingContext->aliasLookup, 0, MAX_HASH_SIZE * sizeof(TableReference *)); 
 
 }
 
-ParsingContext ParseSQL(const char *sql, size_t length, Arena *arena)
+void ParseSQL(ParsingContext *parsingContext, const char *sql, size_t length)
 {
-    ParsingContext parsingContext = {0};
-    parsingContext.parseArena = arena;
-    parsingContext.success = true;
 
-    ParseBaseGrammar(&parsingContext, sql, length);
-    ParsePostProcessing(&parsingContext);
+    ParseBaseGrammar(parsingContext, sql, length);
+    ParsePostProcessing(parsingContext);
 
     //  At this point the SQL is at least consistent with itself.  
     //  For example consider:
     //     SELECT p.name FROM people p WHERE p.name = 'joe';
-    //  At this point of execution the SQL is verified that all alias
-    //  match the FROM clause.  Whereas:
+    //  will pass all checks
+    //  Whereas:
     //     SELECT nope.name FROM people p WHERE p.name = 'joe';
     //  will abort execution (for now)
-    return parsingContext;
 }

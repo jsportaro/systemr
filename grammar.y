@@ -46,9 +46,9 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %token OR      
 %token WHERE   
 
-%type <SelectStatement *> select_stmt
-%type <SelectExpressionList *> select_expr_list
-%type <SelectExpression *> select_expr
+%type <Plan *> select_stmt
+%type <LogicalProjections *> select_expr_list
+%type <LogicalProjection *> select_expr
 %type <PlanNode *> table_refs 
 %type <LogicalScan *> table_ref
 %type <LogicalSelection *> opt_where
@@ -68,28 +68,28 @@ select_stmt:
     SELECT select_expr_list
     FROM table_refs            
     opt_where                        { 
-                                       $$ = CreateSelectStatement(parsingContext, $2, $4, $5);
+                                       $$ = CreatePlan(parsingContext, $2, $4, $5);
                                      }
 ;  
 
 select_expr_list: 
     select_expr                      { 
-                                       $$ = CreateSelectExpressionList(parsingContext, $1); 
+                                       $$ = BeginProjections(parsingContext, $1); 
                                      }
 
   | select_expr_list ',' select_expr { 
-                                       $$ = AppendSelectExpressionList(parsingContext, $1, $3); 
+                                       $$ = LinkProjection($1, $3); 
                                      }
 ;
 
 select_expr:
-    expr                             { $$ = CreateSelectExpression(parsingContext, NULL, $1); }
-  | expr AS "identifier"             { $$ = CreateSelectExpression(parsingContext, $3, $1);   }
-  | '*'                              { $$ = NULL;}
+    expr                             { $$ = CreateProjection(parsingContext, NULL, $1); }
+  | expr AS "identifier"             { $$ = CreateProjection(parsingContext, $3, $1);   }
+  | '*'                              { $$ = CreateProjectionAll(parsingContext);        }
 ;
   
 table_refs:
-    table_ref                        { $$ = ScanToPlan(parsingContext, $1);     }
+    table_ref                        { $$ = ScanToPlan($1);     }
   | table_refs ',' table_ref         { $$ = CreateJoin(parsingContext, $1, $3); } 
 ;
   

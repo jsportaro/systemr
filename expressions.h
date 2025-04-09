@@ -8,7 +8,6 @@ typedef struct Identifier
     const char *qualifier;
     const char *name;
     struct Identifier *next;
-    Attribute *attribute;
 } Identifier;
 
 typedef enum 

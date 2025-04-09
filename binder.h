@@ -3,7 +3,7 @@
 
 #include <catalog.h>
 #include <common.h>
-#include <sql.h>
+#include <expressions.h>
 
 struct Plan;
 
