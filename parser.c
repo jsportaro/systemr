@@ -3,47 +3,71 @@
 #include <parser.h>
 #include <parser.gen.h>
 #include <lexer.gen.h>
+#include <rstrings.h>
 
-static bool AddAliasLookup(ParsingContext *parsingContext, LogicalScan *scan, const char *alias)
+typedef struct Alias Alias;
+
+struct Alias
 {
-    size_t aliasLength = strlen(alias);
-    uint32_t i = Hash(alias, aliasLength) % MAX_HASH_SIZE;
+    Alias *child[4];
+    String name;
+};
 
-    //  If neither name exists, we're good to add.
-    //  However, if a reference already exists in either case then we have a duplicate name collision
-    for (;;)
+static bool AddAlias(Alias **aliases, String alias, Arena *arena)
+{
+    uint64_t hash = 0;
+    for (hash = HashString(alias); *aliases; hash <<= 2)
     {
-        if (parsingContext->aliasLookup[i] == NULL)
+        if (Equals(alias, (*aliases)->name) == true)
         {
-            parsingContext->aliasLookup[i] = scan;
-
-            return true;
-        }
-        else if (strncmp(alias, parsingContext->aliasLookup[i]->alias, aliasLength) == 0)
-        {
-            //  Alias already exists
             return false;
         }
 
-        i = (i + 1) % MAX_HASH_SIZE;
+        aliases = &(*aliases)->child[hash >> 62];
     }
+
+    if (arena == NULL)
+    {
+        return false;
+    }
+
+    *aliases = NEW(arena, Alias);
+    (*aliases)->name = alias;
+    return true;
 }
 
-static void BuildAliasLookup(ParsingContext *parsingContext)
+static bool AliasExists(Alias **aliases, String alias)
 {
-    LogicalScan *scan = parsingContext->scans;
-    bool wasAdded = false;
+    uint64_t hash = 0;
+    for (hash = HashString(alias); *aliases; hash <<= 2)
+    {
+        if (Equals(alias, (*aliases)->name) == true)
+        {
+            return true;
+        }
+
+        aliases = &(*aliases)->child[hash >> 62];
+    }
+
+    return false;
+}
+
+static bool BuildAliasLookup(LogicalScan *scan, Alias **aliases, Arena *arena)
+{
+    bool success = true;
 
     while (scan != NULL)
     {
-        parsingContext->success &= wasAdded = AddAliasLookup(parsingContext, scan, scan->alias);
+        success &= AddAlias(aliases, scan->alias, arena);
 
         //  Todo:  Add some kind of messaging
         scan = scan->next;
     }
+
+    return success;
 }
 
-static bool VerifyUnresolvedIdentifiers(ParsingContext *parsingContext, Identifier *unresolved)
+static bool VerifyUnresolvedIdentifiers(Alias **aliases, Identifier *unresolved)
 {
     //  Look through Identifiers to see if they match up with a table alias.
     //  For identifiers with a qualifier
@@ -52,26 +76,9 @@ static bool VerifyUnresolvedIdentifiers(ParsingContext *parsingContext, Identifi
     bool success = true;
     while (unresolved != NULL)
     {
-        if (unresolved->qualifier != NULL)
+        if (unresolved->qualifier.length != 0)
         {
-            size_t length = strlen(unresolved->qualifier);
-            uint32_t i = Hash(unresolved->qualifier, length) % MAX_HASH_SIZE;
-
-            for (;;)
-            {
-                if (parsingContext->aliasLookup[i] == NULL)
-                {
-                    success &= false;
-                    break;
-                }
-                else if (strncmp(unresolved->qualifier, parsingContext->aliasLookup[i]->alias, length) == 0)
-                {
-                    success &= true;
-                    break;
-                }
-
-                i = (i + 1) % MAX_HASH_SIZE;
-            }
+            success &= AliasExists(aliases, unresolved->qualifier);
         }
 
         unresolved = unresolved->next;
@@ -80,17 +87,17 @@ static bool VerifyUnresolvedIdentifiers(ParsingContext *parsingContext, Identifi
     return success;
 }
 
-static bool VerifyAliasedSelections(ParsingContext *parsingContext, LogicalSelection *selection)
+static bool VerifyAliasedSelections(Alias **aliases, LogicalSelection *selection)
 {
     if (selection != NULL)
     {
-        return VerifyUnresolvedIdentifiers(parsingContext, selection->unresolved);
+        return VerifyUnresolvedIdentifiers(aliases, selection->unresolved);
     }
 
     return true;
 }
 
-static bool VerifyAliasedProjections(ParsingContext *parsingContext, LogicalSelection **selection)
+static bool VerifyAliasedProjections(ParsingContext *parsingContext, Alias **aliases, LogicalSelection **selection)
 {
     PlanNode *node = parsingContext->plan->root;
     bool verified = true;
@@ -98,7 +105,7 @@ static bool VerifyAliasedProjections(ParsingContext *parsingContext, LogicalSele
     {
         LogicalProjection *projection = (LogicalProjection *)node;
 
-        verified &= VerifyUnresolvedIdentifiers(parsingContext, projection->unresolved);
+        verified &= VerifyUnresolvedIdentifiers(aliases, projection->unresolved);
         node = projection->child;
     }
 
@@ -108,6 +115,29 @@ static bool VerifyAliasedProjections(ParsingContext *parsingContext, LogicalSele
     }
 
     return verified;
+}
+
+static void ParsePostProcessing(ParsingContext *parsingContext)
+{
+    LogicalSelection *selection = NULL;
+    parsingContext->success = true;
+
+    Alias *aliases = NULL;
+
+    if (BuildAliasLookup(parsingContext->scans, &aliases, parsingContext->parseArena) == false)
+    {
+        parsingContext->success = false;
+
+        return;
+    }
+
+    // Check to make sure any identifiers like 'alias.column' actually use a 
+    // alias present in the from clause
+    parsingContext->success &= VerifyAliasedProjections(parsingContext, &aliases, &selection);
+    parsingContext->success &= VerifyAliasedSelections(&aliases, selection);
+
+    memset(parsingContext->aliasLookup, 0, MAX_HASH_SIZE * sizeof(TableReference *)); 
+
 }
 
 static void ParseBaseGrammar(ParsingContext *parsingContext, const char *sql, size_t length)
@@ -125,33 +155,17 @@ static void ParseBaseGrammar(ParsingContext *parsingContext, const char *sql, si
     yylex_destroy(scanInfo);
 }
 
-static void ParsePostProcessing(ParsingContext *parsingContext)
-{
-    LogicalSelection *selection = NULL;
-    parsingContext->success = true;
-
-    BuildAliasLookup(parsingContext);
-
-    // Check to make sure any identifiers like 'alias.column' actually use a 
-    // alias present in the from clause
-    parsingContext->success &= VerifyAliasedProjections(parsingContext, &selection);
-    parsingContext->success &= VerifyAliasedSelections(parsingContext, selection);
-
-    memset(parsingContext->aliasLookup, 0, MAX_HASH_SIZE * sizeof(TableReference *)); 
-
-}
-
 void ParseSQL(ParsingContext *parsingContext, const char *sql, size_t length)
 {
-
     ParseBaseGrammar(parsingContext, sql, length);
     ParsePostProcessing(parsingContext);
 
-    //  At this point the SQL is at least consistent with itself.  
+    //  At this point we know if SQL is at least consistent with itself.  
     //  For example consider:
     //     SELECT p.name FROM people p WHERE p.name = 'joe';
     //  will pass all checks
     //  Whereas:
     //     SELECT nope.name FROM people p WHERE p.name = 'joe';
     //  will abort execution (for now)
+    //  Also, we won't have duplicate table names or aliases
 }

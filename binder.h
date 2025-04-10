@@ -1,7 +1,9 @@
 #ifndef __SYSTEMR_BINDER_H__
 #define __SYSTEMR_BINDER_H__
 
+#include <arena.h>
 #include <catalog.h>
+#include <plan.h>
 #include <common.h>
 #include <expressions.h>
 
@@ -33,5 +35,7 @@ typedef struct
 } AttributeBinding;
 
 //struct Plan *AttemptBind(SelectStatement *selectStatment, Arena *executionArena);
+
+bool AttemptBind(Plan *plan, Arena *executionArena);
 
 #endif

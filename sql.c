@@ -1,5 +1,6 @@
 #include <arena.h>
 #include <sql.h>
+#include <rstrings.h>
 
 #include <string.h>
 
@@ -24,6 +25,8 @@ Plan *CreatePlan(ParsingContext *parsingContext, LogicalProjections *projections
     {
         projections->last->child = tables;
     }
+
+    plan->scans = parsingContext->scans;
 
     return plan;
 }
@@ -90,7 +93,7 @@ LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, c
 {
     LogicalScan *scan = NEW(parsingContext->parseArena, LogicalScan);
 
-    scan->name = tableName;
+    scan->name = S(tableName);
     scan->type = LPLAN_SCAN;
     scan->next = parsingContext->scans;
     parsingContext->scans = scan;
@@ -99,7 +102,7 @@ LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, c
     //  Helps reduce string compares later when matching alias to tables
     //  For example:
     //      SELECT table1.col1 From table1
-    scan->alias = tableAlias == NULL ? tableName : tableAlias;
+    scan->alias = tableAlias == NULL ? scan->name : S(tableAlias);
 
     return scan;
 }
@@ -108,7 +111,7 @@ Expression *CreateStringExpression(ParsingContext *parsingContext, const char* s
 {
     TermExpression *expression = NEW(parsingContext->parseArena, TermExpression);
     
-    expression->value.string = string;
+    expression->value.string = S(string);
     expression->type = EXPR_STRING;
 
     return (Expression *)expression;
@@ -128,8 +131,12 @@ Expression *CreateIdentifierExpression(ParsingContext *parsingContext, const cha
 {
     TermExpression *expression = NEW(parsingContext->parseArena, TermExpression);
 
-    expression->value.identifier.qualifier = qualifier;
-    expression->value.identifier.name = name;
+    if (qualifier != NULL)
+    {
+        expression->value.identifier.qualifier = S(qualifier);
+    }
+    
+    expression->value.identifier.name = S(name);
     expression->type = EXPR_IDENIFIER;
 
     expression->value.identifier.next = parsingContext->unresolved;

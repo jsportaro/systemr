@@ -37,8 +37,8 @@ typedef struct
 
 typedef struct 
 {
-    const char *name;
-    const char *alias;
+    String name;
+    String alias;
 } TableReference;
 
 typedef struct
@@ -71,6 +71,15 @@ typedef struct
     bool allAttributes;
     LogicalScan *aliasLookup[MAX_HASH_SIZE];
 } ParsingContext;
+
+typedef struct
+{
+    bool success;
+    bool allAttributes;
+
+    Plan *plan;
+    LogicalScan *scans;
+} ParsingResult;
 
 void Finalize(ParsingContext *parsingContext, Plan* plan);
 

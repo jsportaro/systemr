@@ -3,6 +3,7 @@
 
 #include <catalog.h>
 #include <expressions.h>
+#include <rstrings.h>
 
 typedef enum PlanNodeType
 {
@@ -18,16 +19,18 @@ typedef struct
     PlanNodeType type;
 } PlanNode;
 
-typedef struct
-{
-    PlanNode *root;
-} Plan;
-
 typedef struct LogicalRename LogicalRename;
 typedef struct LogicalProjection LogicalProjection;
 typedef struct LogicalSelection LogicalSelection;
 typedef struct LogicalJoin LogicalJoin;
 typedef struct LogicalScan LogicalScan;
+
+typedef struct
+{
+    PlanNode *root;
+
+    LogicalScan *scans;
+} Plan;
 
 struct LogicalRename
 {
@@ -66,9 +69,11 @@ struct LogicalScan
 {
     PlanNodeType type;
 
-    const char *name;
-    const char *alias;
+    String name;
+    String alias;
 
+    Relation *relation;
+    
     LogicalScan *next;
 };
 
