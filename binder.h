@@ -1,9 +1,11 @@
 #ifndef __SYSTEMR_BINDER_H__
 #define __SYSTEMR_BINDER_H__
 
+#include <arena.h>
 #include <catalog.h>
+#include <plan.h>
 #include <common.h>
-#include <sql.h>
+#include <expressions.h>
 
 struct Plan;
 
@@ -20,7 +22,7 @@ typedef struct RelationBinding RelationBinding;
 
 struct RelationBinding
 {
-    TableReference *tableReference;
+    //TableReference *tableReference;
     Relation *boundRelation;
     BindingResult bindingResult;
 };
@@ -32,6 +34,8 @@ typedef struct
     BindingResult bindingResult;
 } AttributeBinding;
 
-struct Plan *AttemptBind(SelectStatement *selectStatment, Arena *executionArena);
+//struct Plan *AttemptBind(SelectStatement *selectStatment, Arena *executionArena);
+
+bool AttemptBind(Plan *plan, Arena *executionArena);
 
 #endif

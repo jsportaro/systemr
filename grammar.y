@@ -7,6 +7,7 @@
 
 %{
 #include <sql.h>
+#include <plan.h>
 #include <parser.gen.h>
 #include <lexer.gen.h>
 #include <stdlib.h>
@@ -45,12 +46,12 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %token OR      
 %token WHERE   
 
-%type <SelectStatement *> select_stmt
-%type <SelectExpressionList *> select_expr_list
-%type <SelectExpression *> select_expr
-%type <TableReferenceList *> table_refs 
-%type <TableReference *> table_ref
-%type <WhereExpression *> opt_where
+%type <Plan *> select_stmt
+%type <LogicalProjections *> select_expr_list
+%type <LogicalProjection *> select_expr
+%type <PlanNode *> table_refs 
+%type <LogicalScan *> table_ref
+%type <LogicalSelection *> opt_where
 %type <Expression *> expr
 %type <const char *> table_alias
 
@@ -67,34 +68,34 @@ select_stmt:
     SELECT select_expr_list
     FROM table_refs            
     opt_where                        { 
-                                       $$ = CreateSelectStatement(parsingContext, $2, $4, $5);
+                                       $$ = CreatePlan(parsingContext, $2, $4, $5);
                                      }
 ;  
 
 select_expr_list: 
     select_expr                      { 
-                                       $$ = CreateSelectExpressionList(parsingContext, $1); 
+                                       $$ = BeginProjections(parsingContext, $1); 
                                      }
 
   | select_expr_list ',' select_expr { 
-                                       $$ = AppendSelectExpressionList(parsingContext, $1, $3); 
+                                       $$ = LinkProjection($1, $3); 
                                      }
 ;
 
 select_expr:
-    expr                             { $$ = CreateSelectExpression(parsingContext, NULL, $1); }
-  | expr AS "identifier"             { $$ = CreateSelectExpression(parsingContext, $3, $1);   }
-  | '*'                              { $$ = NULL;}
+    expr                             { $$ = CreateProjection(parsingContext, NULL, $1); }
+  | expr AS "identifier"             { $$ = CreateProjection(parsingContext, $3, $1);   }
+  | '*'                              { $$ = CreateProjectionAll(parsingContext);        }
 ;
   
 table_refs:
-    table_ref                        { $$ = CreateTableReferenceList(parsingContext, $1);     }
-  | table_refs ',' table_ref         { $$ = AppendTableReferenceList(parsingContext, $1, $3); } 
+    table_ref                        { $$ = ScanToPlan($1);     }
+  | table_refs ',' table_ref         { $$ = CreateJoin(parsingContext, $1, $3); } 
 ;
   
 table_ref:
-    "identifier"                     { $$ = CreateTableReference(parsingContext, $1, NULL); }
-  | "identifier" table_alias         { $$ = CreateTableReference(parsingContext, $1, $2); }
+    "identifier"                     { $$ = CreateScan(parsingContext, $1, NULL); }
+  | "identifier" table_alias         { $$ = CreateScan(parsingContext, $1, $2); }
 
 ;
     
@@ -106,7 +107,7 @@ table_alias:
 opt_where:
                                      { $$ = NULL; }
   | WHERE expr                       { 
-                                       $$ = CreateWhereExpression(parsingContext, $2);  
+                                       $$ = CreateSelection(parsingContext, $2);  
                                      }
 ;
 

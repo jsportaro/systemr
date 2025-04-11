@@ -1,122 +1,128 @@
 #include <arena.h>
 #include <common.h>
 #include <catalog.h>
+#include <rstrings.h>
 
 #include <string.h>
 
+typedef struct
+{
+    Relations *relations;
+    int attributeCount;
+} Catalog;
+
+struct Relations
+{
+    Relations *child[4];
+    String name;
+    Relation relation;
+};
+
+struct Attributes
+{
+    Attributes *child[4];
+    String name;
+    Attribute relation;
+};
+
 static Catalog catalog = {0};
 
-static void ComputeAttributeHash(Attribute *attribute)
+static Attribute *LookupAttribute(Attributes **attributes, String name, Arena *arena)
 {
-    size_t length = strlen(attribute->name) + strlen(attribute->relation->name);
-    char *buffer = malloc(length);
-
-    if (buffer == NULL)
+    for (uint64_t hash = HashString(name); *attributes; hash <<= 2)
     {
-        abort();
-    }
-
-    strcat(buffer, attribute->name);
-    strcat(buffer, attribute->relation->name);
-
-    attribute->hash = Hash(buffer, length);
-
-    free(buffer);
-}
-
-static int AddAttribute(int relationId, const char *name, AttributeType type)
-{
-    size_t nameLength = strlen(name);
-    int i = Hash(name, nameLength) % MAX_HASH_SIZE;
-    Relation *relation = &catalog.relations[relationId];
-    Attribute *attribute = NULL;
-    
-     for (;;)
-    {
-        attribute = &relation->attributes[i];
-        
-        if (attribute->nameLength == 0)
+        if (Equals(name, (*attributes)->name) == true)
         {
-            //  This is empty so break out and assign
-            break;
+            return &(*attributes)->relation;
         }
 
-        i = (i + 1) % MAX_HASH_SIZE;
+        ptrdiff_t i = hash >> 62;
+        attributes = &(*attributes)->child[i];
     }
 
-    attribute->nameLength = strlen(name);
-    attribute->name = name;
-    attribute->relationId = relationId;
+    if (arena == NULL)
+    {
+        return NULL;
+    }
+
+    *attributes = NEW(arena, Attributes);
+    (*attributes)->name = name;
+
+    return &(*attributes)->relation;
+}
+
+static Attribute *AddAttribute(Relation *relation, const char *name, AttributeType type, Arena *arena)
+{
+    String attributeName =  S(name);
+    Attribute *attribute = LookupAttribute(&relation->attributes, attributeName, arena);
+
+    attribute->name = attributeName;
     attribute->type = type;
+    attribute->id = catalog.attributeCount++;
     attribute->relation = relation;
-    ComputeAttributeHash(attribute);
-    
-    catalog.attributes[catalog.attributeCount++] = attribute;
 
-    return i;
+    return attribute;
 }
 
-static int AddRelation(const char *name)
+static Relation *LookupRelation(String name, Arena *arena)
 {
-    size_t length = strlen(name);
-    uint32_t i = Hash(name, length) % MAX_HASH_SIZE;
-
-    //  If neither name exists, we're good to add.
-    //  However, if a reference already exists in either case then we have a duplicate name collision
-    for (;;)
+    Relations **relations = &catalog.relations;
+    uint64_t hash = 0;
+    for (hash = HashString(name); *relations; hash <<= 2)
     {
-        if (catalog.relations[i].isSet == false)
+        if (Equals(name, (*relations)->name) == true)
         {
-            catalog.relations[i].isSet = true;
-            catalog.relations[i].name = name;
-
-            return i;
-        }
-        else if ((catalog.relations[i].isSet = true) && (strncmp(name, catalog.relations[i].name, length) == 0))
-        {
-            //  Alias already exists
-            return i;
+            return &(*relations)->relation;
         }
 
-        i = (i + 1) % MAX_HASH_SIZE;
+        relations = &(*relations)->child[hash >> 62];
     }
-}
 
-Relation *GetRelation(const char *relation)
-{
-    size_t length = strlen(relation);
-    uint32_t i = Hash(relation, length) % MAX_HASH_SIZE;
-
-    for (;;)
+    if (arena == NULL)
     {
-        if (catalog.relations[i].isSet == false)
-        {
-            return NULL;
-        }
-        else if (strncmp(relation, catalog.relations[i].name, length) == 0)
-        {
-            //  Alias already exists
-            return &catalog.relations[i];
-        }
-
-        i = (i + 1) % MAX_HASH_SIZE;
+        return NULL;
     }
+
+    *relations = NEW(arena, Relations);
+    (*relations)->name = name;
+
+    return &(*relations)->relation;
 }
 
-void BuildCatalog(void)
+static Relation *AddRelation(const char *name, Arena *arena)
 {
-    int relation = 0;
+    String n = S(name);
 
-    relation = AddRelation("person");
-    AddAttribute(relation, "name", ATTR_CHAR);
-    AddAttribute(relation, "age", ATTR_INT);
-    AddAttribute(relation, "address_id", ATTR_INT);
-    AddAttribute(relation, "id", ATTR_INT);
+      Relation *relation = LookupRelation(n, arena);
+    relation->name = n;
+
+    return relation;
+}
+
+Relation *GetRelation(String relation)
+{
+    return LookupRelation(relation, NULL);
+}
+
+Attribute *GetAttribute(Relation *relation, String name)
+{
+    return LookupAttribute(&relation->attributes, name, NULL);
+}
+
+void BuildCatalog(Arena *arena)
+{
+    Relation *relation = NULL;
+
+    relation = AddRelation("person", arena);
+    AddAttribute(relation, "name", ATTR_CHAR, arena);
+    AddAttribute(relation, "age", ATTR_INT, arena);
+    AddAttribute(relation, "address_id", ATTR_INT, arena);
+    AddAttribute(relation, "id", ATTR_INT, arena);
     
-    relation = AddRelation("place");
-    AddAttribute(relation, "line_one", ATTR_CHAR);
-    AddAttribute(relation, "city", ATTR_CHAR);
-    AddAttribute(relation, "state", ATTR_CHAR);
-    AddAttribute(relation, "zip", ATTR_INT);
-    AddAttribute(relation, "id", ATTR_INT);
+    relation = AddRelation("place", arena);
+    AddAttribute(relation, "line_one", ATTR_CHAR, arena);
+    AddAttribute(relation, "city", ATTR_CHAR, arena);
+    AddAttribute(relation, "state", ATTR_CHAR, arena);
+    AddAttribute(relation, "zip", ATTR_INT, arena);
+    AddAttribute(relation, "id", ATTR_INT, arena);
 }

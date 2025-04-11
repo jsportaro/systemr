@@ -1,11 +1,15 @@
 #ifndef __SYSTEMR_EXPRESSION_H__
 #define __SYSTEMR_EXPRESSION_H__
 
+#include <catalog.h>
+#include <rstrings.h>
+
 typedef struct Identifier
 {
-    const char *qualifier;
-    const char *name;
+    String qualifier;
+    String name;
     struct Identifier *next;
+    Attribute *attribute;
 } Identifier;
 
 typedef enum 
@@ -43,7 +47,7 @@ typedef struct
     union 
     {
         int number;
-        const char *string;
+        String string;
         Identifier identifier;
     } value;
 } TermExpression;

@@ -6,6 +6,6 @@
 
 #include <stdlib.h>
 
-ParsingContext ParseSQL(const char *sql, size_t length, Arena *arena);
+void ParseSQL(ParsingContext *parsingContext, const char *sql, size_t length);
 
 #endif

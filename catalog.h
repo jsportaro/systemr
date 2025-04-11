@@ -2,6 +2,7 @@
 #define __SYSTEMR_CATALOG_H__
 
 #include <common.h>
+#include <rstrings.h>
 
 typedef enum
 {
@@ -12,6 +13,8 @@ typedef enum
 typedef struct Index Index;
 typedef struct Attribute Attribute;
 typedef struct Relation Relation;
+typedef struct Relations Relations;
+typedef struct Attributes Attributes;
 
 struct Index
 {
@@ -21,8 +24,8 @@ struct Index
 
 struct Attribute
 {
-    const char *name;
-    size_t nameLength;
+    int id;
+    String name;
     AttributeType type;
     int relationId;
     Relation *relation;
@@ -31,25 +34,11 @@ struct Attribute
 
 struct Relation
 {
-    const char *name;
-    bool isSet;
-    Attribute attributes[MAX_HASH_SIZE];
+    String name;
+    Attributes *attributes;
 };
 
-typedef struct
-{
-    Relation relations[MAX_ARRAY_SIZE];
-    int relationCount;
-
-    Index indices[MAX_ARRAY_SIZE];
-    int indexCount;
-
-    Attribute *attributes[MAX_ARRAY_SIZE];
-    int attributeCount;
-} Catalog;
-
-void BuildCatalog(void);
-//Attribute *GetAttribute(const char *relation, const char *attribute, int *count);
-Relation *GetRelation(const char *relation);
+void BuildCatalog(Arena *arena);
+Relation *GetRelation(String relation);
 
 #endif

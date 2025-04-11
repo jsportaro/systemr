@@ -2,15 +2,16 @@
 #define __SYSTEMR_PLAN_H__
 
 #include <catalog.h>
-#include <binder.h>
-#include <sql.h>
+#include <expressions.h>
+#include <rstrings.h>
 
-typedef enum
+typedef enum PlanNodeType
 {
-    PLAN_ROOT,
-    PLAN_JOIN,
     LPLAN_SELECT,
     LPLAN_PROJECT,
+    LPLAN_PROJECT_ALL,
+    LPLAN_JOIN,
+    LPLAN_SCAN,
 } PlanNodeType;
 
 typedef struct
@@ -18,38 +19,62 @@ typedef struct
     PlanNodeType type;
 } PlanNode;
 
+typedef struct LogicalRename LogicalRename;
+typedef struct LogicalProjection LogicalProjection;
+typedef struct LogicalSelection LogicalSelection;
+typedef struct LogicalJoin LogicalJoin;
+typedef struct LogicalScan LogicalScan;
+
 typedef struct
 {
     PlanNode *root;
+
+    LogicalScan *scans;
 } Plan;
 
-typedef struct Selection Selection;
-typedef struct Projection Projection;
+struct LogicalRename
+{
+    const char *name;
+};
 
-struct Projection
+struct LogicalProjection
 {
     PlanNodeType type;
     PlanNode *child;
 
-    AttributeBinding *attributeBinding;
+    Expression *projected;
+    Identifier *unresolved;
 };
 
-struct Selection
+struct LogicalSelection
 {
     PlanNodeType type;
     PlanNode *child;
 
     Expression *condition;
+    Identifier *unresolved;
 };
 
-typedef struct
+struct LogicalJoin
 {
     PlanNodeType type;
 
-    Attribute *left;
-    Attribute *right;
+    PlanNode *left;
+    PlanNode *right;
 
     Expression *joinBy;
-} LogicalJoin;
+};
+
+struct LogicalScan
+{
+    PlanNodeType type;
+
+    String name;
+    String alias;
+
+    Relation *relation;
+    
+    LogicalScan *next;
+};
 
 #endif
