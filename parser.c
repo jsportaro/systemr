@@ -99,9 +99,11 @@ static bool VerifyAliasedSelections(Alias **aliases, LogicalSelection *selection
 
 static bool VerifyAliasedProjections(ParsingContext *parsingContext, Alias **aliases, LogicalSelection **selection)
 {
+    // Check to make sure any identifiers like 'alias.column' actually use a 
+    // alias present in the from clause
     PlanNode *node = parsingContext->plan->root;
     bool verified = true;
-    
+
     while (node->type == LPLAN_PROJECT_ALL || node->type == LPLAN_PROJECT)
     {
         LogicalProjection *projection = (LogicalProjection *)node;
@@ -125,6 +127,12 @@ static void ParsePostProcessing(ParsingContext *parsingContext)
 
     Alias *aliases = NULL;
 
+    // Create a lookup table for aliases
+    // Remember back during BISONing, when an alias didn't exist for a table we assigned the alias
+    // as the table name anyway.
+    // That's for cases like:
+    //      SELECT p.name, address.line_one FROM people p, address
+    // We only need one look up table for resolution of address.line_one
     if (BuildAliasLookup(parsingContext->scans, &aliases, parsingContext->parseArena) == false)
     {
         parsingContext->success = false;
@@ -132,8 +140,6 @@ static void ParsePostProcessing(ParsingContext *parsingContext)
         return;
     }
 
-    // Check to make sure any identifiers like 'alias.column' actually use a 
-    // alias present in the from clause
     parsingContext->success &= VerifyAliasedProjections(parsingContext, &aliases, &selection);
     parsingContext->success &= VerifyAliasedSelections(&aliases, selection);
 

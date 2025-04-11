@@ -197,6 +197,9 @@ bool AttemptBind(Plan *plan, Arena *executionArena)
     AliasBinding *aliasLookup = { 0 };
     bool success = true;
 
+    // Now, we'll try to bind all the identifiers to attributes or relations.
+    // If something fails, continue on to give the user as much info as we can before
+    // bombing out 
     success &= BindScans(plan->scans, &aliasLookup, executionArena);
     success &= AttemptBindProjections(plan, &aliasLookup, plan->scans, executionArena);
 
