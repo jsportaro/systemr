@@ -101,6 +101,7 @@ static bool VerifyAliasedProjections(ParsingContext *parsingContext, Alias **ali
 {
     PlanNode *node = parsingContext->plan->root;
     bool verified = true;
+    
     while (node->type == LPLAN_PROJECT_ALL || node->type == LPLAN_PROJECT)
     {
         LogicalProjection *projection = (LogicalProjection *)node;

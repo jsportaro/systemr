@@ -12,8 +12,8 @@ int main(void)
     printf("SystemR\n");
     //char *sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place, thing WHERE person.address_id = place.id;";
     //char *sql = "SELECT person.name, name FROM person, nope;";
-    char *sql = "SELECT p.name, age FROM person p, place WHERE p.name = 'joe';";
-    
+    //char *sql = "SELECT p.name, age, id FROM person p, place WHERE p.name = 'joe';";
+    char *sql = "SELECT p.name, age, id FROM person p, place, thing WHERE p.name = 'joe';";
     Arena executionArena = NewArena(EXECUTION_ARENA_SIZE);
     ParsingContext parsingContext = { 0 };
 
@@ -21,12 +21,21 @@ int main(void)
     parsingContext.parseArena = &executionArena;
 
     ParseSQL(&parsingContext, sql, strlen(sql));
-
-    printf("Parsing %s\n", parsingContext.success == true ? "success" : "failure");
+    printf("Parsing %s", sql);
+    printf(" -- %s\n", parsingContext.success == true ? "success" : "failure");
 
     if (parsingContext.success == true)
     {
-        AttemptBind(parsingContext.plan, &executionArena);
+        printf("Binding -- ");
+
+        if (AttemptBind(parsingContext.plan, &executionArena) == true)
+        {
+            printf("success\n");
+        }
+        else
+        {
+            printf("failure\n");
+        }
     }
 
     free(executionArena.original);

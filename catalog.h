@@ -40,5 +40,6 @@ struct Relation
 
 void BuildCatalog(Arena *arena);
 Relation *GetRelation(String relation);
+Attribute *GetAttribute(Relation *relation, String name);
 
 #endif
