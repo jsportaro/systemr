@@ -22,19 +22,6 @@ typedef struct
     Identifier *unresolved;
 } SelectExpression;
 
-typedef struct
-{
-    Expression *expression;
-
-    Identifier *unresolved;
-} WhereExpression;
-
-typedef struct
-{
-    SelectExpression *selectList[MAX_ARRAY_SIZE];
-    int selectListCount;
-} SelectExpressionList;
-
 typedef struct 
 {
     String name;
@@ -53,13 +40,6 @@ typedef struct
     TableReference *tableReferences[MAX_ARRAY_SIZE];
     int count;
 } TableReferenceList;
-
-struct SelectStatement
-{
-    SelectExpressionList *selectExpressionList;
-    TableReferenceList *tableReferenceList;
-    WhereExpression *whereExpression;
-};
 
 typedef struct 
 {
