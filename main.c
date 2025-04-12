@@ -13,7 +13,8 @@ int main(void)
     //char *sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place, thing WHERE person.address_id = place.id;";
     //char *sql = "SELECT person.name, name FROM person, nope;";
     //char *sql = "SELECT p.name, age, id FROM person p, place WHERE p.name = 'joe';";
-    char *sql = "SELECT p.name, age, id FROM person p, place, thing WHERE p.name = 'joe';";
+    //char *sql = "SELECT p.name, age, id FROM person p, place, thing WHERE p.name = 'joe';";
+    char *sql = "SELECT p.name, age, id FROM person p, place, thing WHERE p.name IN (SELECT name FROM person);";
     Arena executionArena = NewArena(EXECUTION_ARENA_SIZE);
     ParsingContext parsingContext = { 0 };
 

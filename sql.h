@@ -41,11 +41,31 @@ typedef struct
     int count;
 } TableReferenceList;
 
+// There's a bug here - ParsingContext has to be scoped to a query
+// NOT global to the entire query
+// Subqueries will break this
+// SELECT 
+//   p.name, 
+//   age, 
+//   id 
+// FROM 
+//   person p,
+//   place
+//   thing 
+// WHERE
+//   p.name IN
+//   (             <--  Need to introduce a new ParsingContext here - probably need to stack them
+//      SELECT 
+//        name
+//      FROM
+//        person
+//   );
 typedef struct 
 {
     bool success;
     Plan *plan;
     LogicalScan *scans;
+    LogicalSelection *selection;
     Arena *parseArena;
     Identifier *unresolved;
     bool allAttributes;

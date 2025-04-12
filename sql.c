@@ -27,7 +27,11 @@ Plan *CreatePlan(ParsingContext *parsingContext, LogicalProjections *projections
     }
 
     plan->scans = parsingContext->scans;
+    plan->selection = parsingContext->selection;
 
+    parsingContext->scans = NULL;
+    parsingContext->selection = NULL;
+    
     return plan;
 }
 
@@ -176,6 +180,7 @@ LogicalSelection *CreateSelection(ParsingContext *parsingContext, Expression *wh
     selection->type = LPLAN_SELECT;
 
     parsingContext->unresolved = NULL;
+    parsingContext->selection = selection;
 
     return selection;
 }

@@ -28,7 +28,7 @@ typedef struct LogicalScan LogicalScan;
 typedef struct
 {
     PlanNode *root;
-
+    LogicalSelection *selection;
     LogicalScan *scans;
 } Plan;
 
