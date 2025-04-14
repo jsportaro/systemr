@@ -63,9 +63,8 @@ static bool BindScans(LogicalScan *scans, AliasBinding **aliasLookup, Arena *exe
     return success;
 }
 
-static bool AttemptBindWithAlias(LogicalProjection *projection, AliasBinding **aliasLookup)
+static bool AttemptBindWithAlias(Identifier **unresolved, AliasBinding **aliasLookup)
 {
-    Identifier **unresolved = &projection->unresolved;
     bool success = true;
 
     while (*unresolved != NULL)
@@ -109,9 +108,8 @@ static bool AttemptBindWithAlias(LogicalProjection *projection, AliasBinding **a
     return success;
 }
 
-static bool AttemptBindAnyRelation(LogicalProjection *projection, LogicalScan *scans)
+static bool AttemptBindAnyRelation(Identifier **unresolved, LogicalScan *scans)
 {
-    Identifier **unresolved = &projection->unresolved;
     bool ambiguous = false;
     bool found = false;
 
@@ -155,16 +153,16 @@ static bool AttemptBindAnyRelation(LogicalProjection *projection, LogicalScan *s
         }
     }
 
-    return projection->unresolved == NULL;
+    return *unresolved == NULL;
 }
 
 static bool AttemptBindProjection(LogicalProjection *projection, AliasBinding **aliasLookup, LogicalScan *scans)
 {
-    return AttemptBindWithAlias(projection, aliasLookup) &&
-           AttemptBindAnyRelation(projection, scans);
+    return AttemptBindWithAlias(&projection->unresolved, aliasLookup) &&
+           AttemptBindAnyRelation(&projection->unresolved, scans);
 }
 
-static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, LogicalScan *scans, Arena *executionArena)
+static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, LogicalScan *scans)
 {
     PlanNode *current = plan->root;
     bool success = true;
@@ -192,6 +190,17 @@ static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, Logic
     return success;
 }
 
+static bool AttemptBindSelection(LogicalSelection *selection, AliasBinding **aliasLookup, LogicalScan *scans)
+{
+    if (selection == NULL)
+    {
+        return true;
+    }
+
+    return AttemptBindWithAlias(&selection->unresolved, aliasLookup) &&
+           AttemptBindAnyRelation(&selection->unresolved, scans);
+}
+
 bool AttemptBind(Plan *plan, Arena *executionArena)
 {
     AliasBinding *aliasLookup = { 0 };
@@ -201,7 +210,8 @@ bool AttemptBind(Plan *plan, Arena *executionArena)
     // If something fails, continue on to give the user as much info as we can before
     // bombing out 
     success &= BindScans(plan->scans, &aliasLookup, executionArena);
-    success &= AttemptBindProjections(plan, &aliasLookup, plan->scans, executionArena);
+    success &= AttemptBindProjections(plan, &aliasLookup, plan->scans);
+    success &= AttemptBindSelection(plan->selection, &aliasLookup, plan->scans);
 
     return success;
 }

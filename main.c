@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     char *sql;
     if (argc != 2)
     {
-        sql = "SELECT person.name FROM person;";
+        sql = "SELECT person.name FROM person Where name = 'joe';";
         printf("Demo SQL %sd\n", sql);
     }
     else
