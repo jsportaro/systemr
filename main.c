@@ -7,14 +7,21 @@
 #include <stdio.h>
 #include <string.h>
 
-int main(void)
+int main(int argc, char **argv)
 {
     printf("SystemR\n");
-    //char *sql = "SELECT person.name AS FullName, place.city AS Town, zip as Zip FROM person, place, thing WHERE person.address_id = place.id;";
-    //char *sql = "SELECT person.name, name FROM person, nope;";
-    //char *sql = "SELECT p.name, age, id FROM person p, place WHERE p.name = 'joe';";
-    //char *sql = "SELECT p.name, age, id FROM person p, place, thing WHERE p.name = 'joe';";
-    char *sql = "SELECT p.name, age, id FROM person p, place, thing WHERE p.name IN (SELECT name FROM person);";
+    char *sql;
+    if (argc != 2)
+    {
+        sql = "SELECT person.name FROM person;";
+        printf("Demo SQL %sd\n", sql);
+    }
+    else
+    {
+        sql = argv[1];
+    }
+
+    printf("Optimizing %s\n", sql);
     Arena executionArena = NewArena(EXECUTION_ARENA_SIZE);
     ParsingContext parsingContext = { 0 };
 
@@ -22,7 +29,7 @@ int main(void)
     parsingContext.parseArena = &executionArena;
 
     ParseSQL(&parsingContext, sql, strlen(sql));
-    printf("Parsing %s", sql);
+    printf("Parsing");
     printf(" -- %s\n", parsingContext.success == true ? "success" : "failure");
 
     if (parsingContext.success == true)

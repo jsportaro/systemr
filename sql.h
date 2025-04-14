@@ -69,7 +69,6 @@ typedef struct
     Arena *parseArena;
     Identifier *unresolved;
     bool allAttributes;
-    LogicalScan *aliasLookup[MAX_HASH_SIZE];
 } ParsingContext;
 
 typedef struct

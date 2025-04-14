@@ -97,11 +97,11 @@ static bool VerifyAliasedSelections(Alias **aliases, LogicalSelection *selection
     return true;
 }
 
-static bool VerifyAliasedProjections(ParsingContext *parsingContext, Alias **aliases, LogicalSelection **selection)
+static bool VerifyAliasedProjections(Plan *plan, Alias **aliases, LogicalSelection **selection)
 {
     // Check to make sure any identifiers like 'alias.column' actually use a 
     // alias present in the from clause
-    PlanNode *node = parsingContext->plan->root;
+    PlanNode *node = plan->root;
     bool verified = true;
 
     while (node->type == LPLAN_PROJECT_ALL || node->type == LPLAN_PROJECT)
@@ -120,10 +120,9 @@ static bool VerifyAliasedProjections(ParsingContext *parsingContext, Alias **ali
     return verified;
 }
 
-static void ParsePostProcessing(ParsingContext *parsingContext)
+static void ParsePostProcessing(Plan *plan, Arena *parseArena, bool *success)
 {
     LogicalSelection *selection = NULL;
-    parsingContext->success = true;
 
     Alias *aliases = NULL;
 
@@ -133,18 +132,17 @@ static void ParsePostProcessing(ParsingContext *parsingContext)
     // That's for cases like:
     //      SELECT p.name, address.line_one FROM people p, address
     // We only need one look up table for resolution of address.line_one
-    if (BuildAliasLookup(parsingContext->scans, &aliases, parsingContext->parseArena) == false)
+    if (BuildAliasLookup(plan->scans, &aliases, parseArena) == false)
     {
-        parsingContext->success = false;
+        *success &= false;
 
         return;
     }
 
-    parsingContext->success &= VerifyAliasedProjections(parsingContext, &aliases, &selection);
-    parsingContext->success &= VerifyAliasedSelections(&aliases, selection);
+    *success &= VerifyAliasedProjections(plan, &aliases, &selection);
+    *success &= VerifyAliasedSelections(&aliases, selection);
 
-    memset(parsingContext->aliasLookup, 0, MAX_HASH_SIZE * sizeof(TableReference *)); 
-
+    return;
 }
 
 static void ParseBaseGrammar(ParsingContext *parsingContext, const char *sql, size_t length)
@@ -153,7 +151,7 @@ static void ParseBaseGrammar(ParsingContext *parsingContext, const char *sql, si
     
     if(yylex_init(&scanInfo))
     {
-        parsingContext->success = false;
+        parsingContext->success &= false;
         return;
     }
 
@@ -164,8 +162,9 @@ static void ParseBaseGrammar(ParsingContext *parsingContext, const char *sql, si
 
 void ParseSQL(ParsingContext *parsingContext, const char *sql, size_t length)
 {
+    parsingContext->success = true;
     ParseBaseGrammar(parsingContext, sql, length);
-    ParsePostProcessing(parsingContext);
+    ParsePostProcessing(parsingContext->plan, parsingContext->parseArena, &parsingContext->success);
 
     //  At this point we know if SQL is at least consistent with itself.  
     //  For example consider:
