@@ -12,22 +12,14 @@ void Finalize(ParsingContext *parsingContext, Plan* plan)
 
 Plan *CreatePlan(ParsingContext *parsingContext, LogicalProjections *projections, PlanNode *tables, LogicalSelection *selection)
 {
+    UNUSED(tables); //  I think I can get rid of tables entirely
+
+    
     Plan *plan = NEW(parsingContext->parseArena, Plan);
 
-    plan->root = (PlanNode *)projections->first;
-    projections->last->child = (PlanNode *)selection;
-
-    if (selection != NULL)
-    {
-        selection->child = tables;
-    }
-    else
-    {
-        projections->last->child = tables;
-    }
-
+    plan->projections = projections;
     plan->scans = parsingContext->scans;
-    plan->selection = parsingContext->selection;
+    plan->selection = selection;
 
     parsingContext->scans = NULL;
     parsingContext->selection = NULL;
@@ -70,7 +62,7 @@ LogicalProjection *CreateProjection(ParsingContext *parsingContext, const char *
 
     projection->projected = expression;
     projection->type = LPLAN_PROJECT;
-    projection->unresolved = parsingContext->unresolved;
+    projection->unresolved = projection->identifiers = parsingContext->unresolved;
     
     parsingContext->unresolved = NULL;
 

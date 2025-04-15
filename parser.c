@@ -97,24 +97,22 @@ static bool VerifyAliasedSelections(Alias **aliases, LogicalSelection *selection
     return true;
 }
 
-static bool VerifyAliasedProjections(Plan *plan, Alias **aliases, LogicalSelection **selection)
+static bool VerifyAliasedProjections(Plan *plan, Alias **aliases)
 {
     // Check to make sure any identifiers like 'alias.column' actually use a 
     // alias present in the from clause
-    PlanNode *node = plan->root;
+    LogicalProjection *projection = plan->projections->first;
     bool verified = true;
 
-    while (node->type == LPLAN_PROJECT_ALL || node->type == LPLAN_PROJECT)
+    while (projection != NULL)
     {
-        LogicalProjection *projection = (LogicalProjection *)node;
+        if (projection->type == LPLAN_PROJECT_ALL)
+        {
+            continue;
+        }
 
         verified &= VerifyUnresolvedIdentifiers(aliases, projection->unresolved);
-        node = projection->child;
-    }
-
-    if (node->type == LPLAN_SELECT)
-    {
-        *selection = (LogicalSelection *)node;
+        projection = (LogicalProjection *)projection->child;
     }
 
     return verified;
@@ -122,8 +120,6 @@ static bool VerifyAliasedProjections(Plan *plan, Alias **aliases, LogicalSelecti
 
 static void ParsePostProcessing(Plan *plan, Arena *parseArena, bool *success)
 {
-    LogicalSelection *selection = NULL;
-
     Alias *aliases = NULL;
 
     // Create a lookup table for aliases
@@ -139,8 +135,8 @@ static void ParsePostProcessing(Plan *plan, Arena *parseArena, bool *success)
         return;
     }
 
-    *success &= VerifyAliasedProjections(plan, &aliases, &selection);
-    *success &= VerifyAliasedSelections(&aliases, selection);
+    *success &= VerifyAliasedProjections(plan, &aliases);
+    *success &= VerifyAliasedSelections(&aliases, plan->selection);
 
     return;
 }

@@ -164,7 +164,7 @@ static bool AttemptBindProjection(LogicalProjection *projection, AliasBinding **
 
 static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, LogicalScan *scans)
 {
-    PlanNode *current = plan->root;
+    PlanNode *current = plan->projections->first;
     bool success = true;
 
     while (current != NULL)

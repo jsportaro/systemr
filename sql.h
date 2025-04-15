@@ -28,11 +28,6 @@ typedef struct
     String alias;
 } TableReference;
 
-typedef struct
-{
-   LogicalProjection *first;
-   LogicalProjection *last;
-} LogicalProjections;
 
 
 typedef struct

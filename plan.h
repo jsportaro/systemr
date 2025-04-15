@@ -27,7 +27,13 @@ typedef struct LogicalScan LogicalScan;
 
 typedef struct
 {
-    PlanNode *root;
+   LogicalProjection *first;
+   LogicalProjection *last;
+} LogicalProjections;
+
+typedef struct Plan
+{
+    LogicalProjections *projections;
     LogicalSelection *selection;
     LogicalScan *scans;
 } Plan;
@@ -43,6 +49,8 @@ struct LogicalProjection
     PlanNode *child;
 
     Expression *projected;
+    
+    Identifier *identifiers;
     Identifier *unresolved;
 };
 
@@ -63,6 +71,13 @@ struct LogicalJoin
     PlanNode *right;
 
     Expression *joinBy;
+};
+
+typedef struct ScanArgument ScanArgument;
+
+struct ScanArgument
+{
+    Attribute *attribute;
 };
 
 struct LogicalScan

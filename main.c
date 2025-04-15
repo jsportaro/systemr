@@ -1,6 +1,7 @@
 #include <catalog.h>
 #include <common.h>
 #include <binder.h>
+#include <heuristics.h>
 #include <parser.h>
 #include <plan.h>
 
@@ -14,7 +15,6 @@ int main(int argc, char **argv)
     if (argc != 2)
     {
         sql = "SELECT person.name FROM person Where name = 'joe';";
-        printf("Demo SQL %sd\n", sql);
     }
     else
     {
@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     printf("Optimizing %s\n", sql);
     Arena executionArena = NewArena(EXECUTION_ARENA_SIZE);
     ParsingContext parsingContext = { 0 };
-
+    bool success = true;
     BuildCatalog(&executionArena);
     parsingContext.parseArena = &executionArena;
 
@@ -32,20 +32,20 @@ int main(int argc, char **argv)
     printf("Parsing");
     printf(" -- %s\n", parsingContext.success == true ? "success" : "failure");
 
-    if (parsingContext.success == true)
+    if (parsingContext.success == false)
     {
-        printf("Binding -- ");
-
-        if (AttemptBind(parsingContext.plan, &executionArena) == true)
-        {
-            printf("success\n");
-        }
-        else
-        {
-            printf("failure\n");
-        }
+        goto Cleanup;
     }
+    
+    printf("Binding");
+    success &= success == true ? AttemptBind(parsingContext.plan, &executionArena) : success;
+    printf(" -- %s\n", success == true ? "success" : "failure");
 
+    printf("Heuristics");
+    success &= success == true ? ApplyHeuristics(parsingContext.plan, &executionArena) : success;
+    printf(" -- %s\n", success == true ? "success" : "failure");
+
+Cleanup:
     free(executionArena.original);
     executionArena.begin = NULL;
     executionArena.end = NULL;
