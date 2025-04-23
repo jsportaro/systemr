@@ -34,8 +34,6 @@ typedef struct
     BindingResult bindingResult;
 } AttributeBinding;
 
-//struct Plan *AttemptBind(SelectStatement *selectStatment, Arena *executionArena);
-
 bool AttemptBind(Plan *plan, Arena *executionArena);
 
 #endif

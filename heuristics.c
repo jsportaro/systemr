@@ -1,8 +1,10 @@
 #include <heuristics.h>
 
-static void PushDownProjection(LogicalProjection *projection, Plan *plan, Arena *arena)
+static void PushDownProjections(Plan *plan, Arena *arena)
 {
+    LogicalProjection *projection = plan->projections;
 
+    
 }
 
 bool ApplyHeuristics(Plan *plan, Arena *arena)
@@ -10,5 +12,5 @@ bool ApplyHeuristics(Plan *plan, Arena *arena)
     UNUSED(plan);
     UNUSED(arena);
 
-    PushDownProjection(plan->projections->first, plan, arena);
+    PushDownProjections(plan, arena);
 }

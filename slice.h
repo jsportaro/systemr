@@ -4,12 +4,15 @@
 #include <common.h>
 #include <arena.h>
 
-#define PUSH(a, s) \
-    ((s)->length == (s)->capacity) \
-        ? (s)->data = push((a), (s)->data, &(s)->capacity, sizeof(*(s)->data)), \
-          (s)->data + (s)->length++ \
-        : (s)->data + (s)->length++)
+#define Push(s, a) ({                                        \
+    typeof(s) s_ = (s);                                      \
+    typeof(a) a_ = (a);                                      \
+    if (s_->length >= s_->capacity) {                        \
+        Grow(s_, sizeof(*s_->data), alignof(*s_->data), a_); \
+    }                                                        \
+    s_->data + s_->len++;                                    \
+})
 
-void *push(Arena *a, void *data, ptrdiff_t *pcap, ptrdiff_t size);
+void Grow(void *slice, ptrdiff_t size, ptrdiff_t align, Arena *arena);
 
 #endif

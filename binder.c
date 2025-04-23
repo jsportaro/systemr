@@ -18,8 +18,10 @@ struct AliasBinding
 
 static AliasBinding *LookupAlias(AliasBinding **aliasBinding, String alias, Arena *arena)
 {
-    for (uint64_t h = HashString(alias); *aliasBinding; h <<= 2) {
-        if (Equals(alias, (*aliasBinding)->alias)) {
+    for (uint64_t h = HashString(alias); *aliasBinding; h <<= 2)
+    {
+        if (Equals(alias, (*aliasBinding)->alias))
+        {
             return *aliasBinding;
         }
         aliasBinding = &(*aliasBinding)->child[h >> 62];

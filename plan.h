@@ -73,11 +73,13 @@ struct LogicalJoin
     Expression *joinBy;
 };
 
-typedef struct ScanArgument ScanArgument;
+typedef struct ScanArguments ScanArguments;
 
-struct ScanArgument
+struct ScanArguments
 {
-    Attribute *attribute;
+    Attribute *data;
+    ptrdiff_t length;
+    ptrdiff_t capacity;
 };
 
 struct LogicalScan
@@ -88,7 +90,8 @@ struct LogicalScan
     String alias;
 
     Relation *relation;
-    
+    ScanArguments scanArguments;
+
     LogicalScan *next;
 };
 
