@@ -35,9 +35,35 @@ static AliasBinding *LookupAlias(AliasBinding **aliasBinding, String alias, Aren
     *aliasBinding = NEW(arena, AliasBinding);
     (*aliasBinding)->alias = alias;
     return *aliasBinding; 
+}  
+
+static LogicalScanLookup *AddScanLookup(LogicalScanLookup **scansLookup, LogicalScan *scan, Arena *arena)
+{
+    uint64_t h = scan->relation->id;
+    while (*scansLookup)
+    {
+        if (scan->relation->id == (*scansLookup)->relationId)
+        {
+            return *scansLookup;
+        }
+        scansLookup = &(*scansLookup)->child[h >> 62];
+
+        h <<= 2;
+    }
+
+    if (!arena) 
+    {
+        return NULL;
+    }
+
+    *scansLookup = NEW(arena, LogicalScanLookup);
+    (*scansLookup)->relationId = scan->relation->id;
+    (*scansLookup)->scan = scan;
+    
+    return *scansLookup; 
 }
 
-static bool BindScans(LogicalScan *scans, AliasBinding **aliasLookup, Arena *executionArena)
+static bool BindScans(LogicalScanLookup **scansLookup, LogicalScan *scans, AliasBinding **aliasLookup, Arena *executionArena)
 {
     bool success = true;
     
@@ -48,8 +74,8 @@ static bool BindScans(LogicalScan *scans, AliasBinding **aliasLookup, Arena *exe
         if (relation != NULL)
         {
             scans->relation = relation;
-
             AliasBinding *aliasBinding = LookupAlias(aliasLookup, scans->alias, executionArena);
+            AddScanLookup(scansLookup, scans, executionArena);
             aliasBinding->relation = relation;
         }
         else
@@ -166,7 +192,7 @@ static bool AttemptBindProjection(LogicalProjection *projection, AliasBinding **
 
 static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, LogicalScan *scans)
 {
-    PlanNode *current = plan->projections->first;
+    LogicalProjection *current = plan->projections->first;
     bool success = true;
 
     while (current != NULL)
@@ -186,7 +212,7 @@ static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, Logic
         }
 
         Next:
-            current = ((LogicalProjection *)current)->child;
+            current = (LogicalProjection *)(current)->child;
     }
 
     return success;
@@ -211,7 +237,7 @@ bool AttemptBind(Plan *plan, Arena *executionArena)
     // Now, we'll try to bind all the identifiers to attributes or relations.
     // If something fails, continue on to give the user as much info as we can before
     // bombing out 
-    success &= BindScans(plan->scans, &aliasLookup, executionArena);
+    success &= BindScans(&plan->scansLookup, plan->scans, &aliasLookup, executionArena);
     success &= AttemptBindProjections(plan, &aliasLookup, plan->scans);
     success &= AttemptBindSelection(plan->selection, &aliasLookup, plan->scans);
 

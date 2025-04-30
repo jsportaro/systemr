@@ -20,6 +20,7 @@ blank     [ \t\n]
 string    '(\\.|''|[^'\n])*'
 operators [-+&~|^/%*(),.;!]  
 equal     "="
+
 %%
 
 AND         { return AND;     }

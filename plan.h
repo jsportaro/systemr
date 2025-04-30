@@ -24,6 +24,7 @@ typedef struct LogicalProjection LogicalProjection;
 typedef struct LogicalSelection LogicalSelection;
 typedef struct LogicalJoin LogicalJoin;
 typedef struct LogicalScan LogicalScan;
+typedef struct LogicalScanLookup LogicalScanLookup;
 
 typedef struct
 {
@@ -36,6 +37,8 @@ typedef struct Plan
     LogicalProjections *projections;
     LogicalSelection *selection;
     LogicalScan *scans;
+
+    LogicalScanLookup *scansLookup;
 } Plan;
 
 struct LogicalRename
@@ -74,12 +77,20 @@ struct LogicalJoin
 };
 
 typedef struct ScanArguments ScanArguments;
+typedef struct ScanArgumentLookup ScanArgumentLookup;
 
 struct ScanArguments
 {
-    Attribute *data;
+    Attribute **data;
     ptrdiff_t length;
     ptrdiff_t capacity;
+};
+
+struct ScanArgumentLookup
+{
+    ScanArgumentLookup *child[4];
+    
+    int attributeId;
 };
 
 struct LogicalScan
@@ -90,9 +101,22 @@ struct LogicalScan
     String alias;
 
     Relation *relation;
+    ScanArgumentLookup *scanArgumentsLookup;
     ScanArguments scanArguments;
+
+    Expression filter;
 
     LogicalScan *next;
 };
+
+struct LogicalScanLookup
+{
+    LogicalScanLookup *child[4];
+    
+    int relationId;
+    LogicalScan *scan;
+};
+
+LogicalScan *ScanLookup(LogicalScanLookup **scansLookup, int relationId);
 
 #endif

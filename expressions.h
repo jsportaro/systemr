@@ -52,4 +52,6 @@ typedef struct
     } value;
 } TermExpression;
 
+String StringifyExpression(String string, Expression *expression, Arena *arena);
+
 #endif

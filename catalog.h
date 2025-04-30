@@ -34,6 +34,7 @@ struct Attribute
 
 struct Relation
 {
+    int id;
     String name;
     Attributes *attributes;
 };

@@ -8,7 +8,7 @@
 typedef struct
 {
     Relations *relations;
-    int attributeCount;
+    int objects;
 } Catalog;
 
 struct Relations
@@ -58,7 +58,7 @@ static Attribute *AddAttribute(Relation *relation, const char *name, AttributeTy
 
     attribute->name = attributeName;
     attribute->type = type;
-    attribute->id = catalog.attributeCount++;
+    attribute->id = catalog.objects++;
     attribute->relation = relation;
 
     return attribute;
@@ -93,9 +93,10 @@ static Relation *AddRelation(const char *name, Arena *arena)
 {
     String n = S(name);
 
-      Relation *relation = LookupRelation(n, arena);
+    Relation *relation = LookupRelation(n, arena);
     relation->name = n;
-
+    relation->id = catalog.objects++;
+    
     return relation;
 }
 

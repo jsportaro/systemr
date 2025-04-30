@@ -7,12 +7,13 @@
 #include <stddef.h>
 #include <string.h>
 
-#define S(s) (String){ (s), strlen(s) }
+#define S(s) (String){ (s), strlen(s), strlen(s) }
 
 typedef struct 
 {
     const char *data;
-    ptrdiff_t length; 
+    ptrdiff_t length;
+    ptrdiff_t capacity;
 } String;
 
 bool Equals(String a, String b);

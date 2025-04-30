@@ -30,8 +30,10 @@ String Concat(String head, String tail, Arena *arena)
     {
         head = Copy(head, arena);
     }
-    head.length += Copy(tail, arena).length;
 
+    head.length += Copy(tail, arena).length;
+    head.capacity = head.length;
+    
     return head;
 }
 
