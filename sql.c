@@ -93,7 +93,7 @@ LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, c
     scan->type = LPLAN_SCAN;
     scan->next = parsingContext->scans;
     parsingContext->scans = scan;
-
+    scan->filter = NULL;
     //  Rewrite to force all table references to have an alias
     //  Helps reduce string compares later when matching alias to tables
     //  For example:
@@ -101,6 +101,20 @@ LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, c
     scan->alias = tableAlias == NULL ? scan->name : S(tableAlias);
 
     return scan;
+}
+
+Expression *CreateExpressionGroup(ParsingContext *parsingContext, Expression *expression)
+{
+    ExpressionGroup *group = NEW(parsingContext->parseArena, ExpressionGroup);
+
+    group->expression = expression;
+    group->type = EXPR_GROUP;
+    group->containsOr = parsingContext->orCount > 0;
+
+    parsingContext->andCount = 0;
+    parsingContext->orCount = 0;
+
+    return (Expression *)group;
 }
 
 Expression *CreateStringExpression(ParsingContext *parsingContext, const char* string)
@@ -141,6 +155,32 @@ Expression *CreateIdentifierExpression(ParsingContext *parsingContext, const cha
     return (Expression *)expression;
 }
 
+Expression *CreateAndExpression(ParsingContext *parsingContext, Expression *left, Expression *right)
+{
+    InfixExpression *and = NEW(parsingContext->parseArena, InfixExpression);
+
+    and->left = left;
+    and->right = right;
+    and->type = EXPR_AND;
+
+    parsingContext->andCount++;
+
+    return (Expression *)and;
+}
+
+Expression *CreateOrExpression(ParsingContext *parsingContext, Expression *left, Expression *right)
+{
+    InfixExpression *or = NEW(parsingContext->parseArena, InfixExpression);
+
+    or->left = left;
+    or->right = right;
+    or->type = EXPR_OR;
+
+    parsingContext->orCount++;
+
+    return (Expression *)or;
+}
+
 Expression *CreateInfixExpression(ParsingContext *parsingContext, ExpressionType expressionType, Expression *left, Expression *right)
 {
     InfixExpression *expression = NEW(parsingContext->parseArena, InfixExpression);
@@ -148,6 +188,16 @@ Expression *CreateInfixExpression(ParsingContext *parsingContext, ExpressionType
     expression->left = left;
     expression->right = right;
     expression->type = expressionType;
+
+    if (expressionType == EXPR_ADD)
+    {
+        parsingContext->andCount++;
+    }
+
+    if (expressionType == EXPR_OR)
+    {
+        parsingContext->orCount++;
+    }
 
     return (Expression *)expression;
 }
@@ -172,6 +222,15 @@ LogicalSelection *CreateSelection(ParsingContext *parsingContext, Expression *wh
     selection->type = LPLAN_SELECT;
 
     parsingContext->unresolved = NULL;
+
+    if (where->type != EXPR_GROUP)
+    {
+        selection->condition = CreateExpressionGroup(parsingContext, where);
+    }
+    else
+    {
+        selection->condition = where;
+    }
     parsingContext->selection = selection;
 
     return selection;

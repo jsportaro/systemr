@@ -61,7 +61,8 @@ struct LogicalSelection
 {
     PlanNodeType type;
     PlanNode *child;
-
+    bool attemptPushdown;
+    
     Expression *condition;
     Identifier *unresolved;
 };
@@ -103,8 +104,7 @@ struct LogicalScan
     Relation *relation;
     ScanArgumentLookup *scanArgumentsLookup;
     ScanArguments scanArguments;
-
-    Expression filter;
+    Expression *filter;
 
     LogicalScan *next;
 };

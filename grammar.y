@@ -115,7 +115,8 @@ expr:
     "string"                         { $$ = CreateStringExpression(parsingContext, $1);           }
   | "integer"                        { $$ = CreateNumberExpression(parsingContext, $1);           }
   | "identifier"                     { $$ = CreateIdentifierExpression(parsingContext, NULL, $1); }
-  | "identifier" '.' "identifier"    { $$ = CreateIdentifierExpression(parsingContext, $1, $3);   }                   
+  | "identifier" '.' "identifier"    { $$ = CreateIdentifierExpression(parsingContext, $1, $3);   }      
+  | '(' expr ')'                     { $$ = CreateExpressionGroup(parsingContext, $2);            }
 ;
 
 expr: 
@@ -124,8 +125,8 @@ expr:
   | expr '*' expr                    { $$ = CreateInfixExpression(parsingContext, EXPR_MUL, $1, $3); }
   | expr '/' expr                    { $$ = CreateInfixExpression(parsingContext, EXPR_DIV, $1, $3); }
   | expr EQUALITY expr               { $$ = CreateInfixExpression(parsingContext, EXPR_EQU, $1, $3); }
-  | expr AND expr                    { $$ = CreateInfixExpression(parsingContext, EXPR_AND, $1, $3); }
-  | expr OR expr                     { $$ = CreateInfixExpression(parsingContext, EXPR_OR , $1, $3); }
+  | expr AND expr                    { $$ = CreateAndExpression(parsingContext, $1, $3); }
+  | expr OR expr                     { $$ = CreateOrExpression(parsingContext, $1, $3); }
 ;
 
 expr:
@@ -139,5 +140,6 @@ yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s)
 {
     UNUSED(locp);
     UNUSED(parsingContext);
-    UNUSED(s);
+
+    printf("Error %s\n", s);
 }

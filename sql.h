@@ -64,6 +64,9 @@ typedef struct
     Arena *parseArena;
     Identifier *unresolved;
     bool allAttributes;
+
+    int orCount;
+    int andCount;
 } ParsingContext;
 
 typedef struct
@@ -89,10 +92,13 @@ PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, LogicalScan
 
 LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, const char *tableAlias);
 
+Expression *CreateExpressionGroup(ParsingContext *parsingContext, Expression *expression);
 Expression *CreateStringExpression(ParsingContext *parsingContext, const char* string);
 Expression *CreateNumberExpression(ParsingContext *parsingContext, long number);
 Expression *CreateIdentifierExpression(ParsingContext *parsingContext, const char* qualifier, const char* name);
 Expression *CreateInfixExpression(ParsingContext *parsingContext, ExpressionType expressionType, Expression *left, Expression *right);
+Expression *CreateAndExpression(ParsingContext *parsingContext, Expression *left, Expression *right);
+Expression *CreateOrExpression(ParsingContext *parsingContext, Expression *left, Expression *right);
 Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left, Plan *plan);
 
 LogicalSelection *CreateSelection(ParsingContext *parsingContext, Expression *where);

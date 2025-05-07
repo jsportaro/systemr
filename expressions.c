@@ -30,6 +30,11 @@ String StringifyExpression(String string, Expression *expression, Arena *arena)
 
             return string;
         }
+        case EXPR_NUMBER: {
+            // Don't want to implement an itoa function
+            // so, just give it a dummy value
+            return S("{num}");
+        }
         case EXPR_EQU: {
             InfixExpression *infix = (InfixExpression *)expression;
 
@@ -45,6 +50,24 @@ String StringifyExpression(String string, Expression *expression, Arena *arena)
             string = Concat(string, StringifyExpression(S(""), infix->left, arena), arena);
             string = Concat(string, S(" AND "), arena);
             string = Concat(string, StringifyExpression(S(""), infix->right, arena), arena);
+
+            return string;
+        }
+        case EXPR_OR: {
+            InfixExpression *infix = (InfixExpression *)expression;
+
+            string = Concat(string, StringifyExpression(S(""), infix->left, arena), arena);
+            string = Concat(string, S(" OR "), arena);
+            string = Concat(string, StringifyExpression(S(""), infix->right, arena), arena);
+
+            return string;
+        }
+        case EXPR_GROUP: {
+            ExpressionGroup *group = (ExpressionGroup *)expression;
+
+            string = Concat(string, S("( "), arena);
+            string = Concat(string, StringifyExpression(S(""), group->expression, arena), arena);
+            string = Concat(string, S(" )"), arena);
 
             return string;
         }

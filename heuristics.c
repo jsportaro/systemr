@@ -22,8 +22,20 @@ static bool AddScanArgumentLookup(ScanArgumentLookup **scanArumentLookup, int at
     return true; 
 }  
 
-static void AddToFilter(LogicalScan *log, Expression *expression, Arena *arena)
+static void AddToFilter(LogicalScan *scan, InfixExpression *expression, Arena *arena)
 {
+    if (scan->filter == NULL)
+    {
+        scan->filter = expression;
+    }
+    else
+    {
+        InfixExpression *and = NEW(arena, InfixExpression);
+        and->left = expression;
+        and->right = scan->filter;
+        and->type = EXPR_AND;
+        scan->filter = and;
+    }
 }
 
 static void AddScanArgument(LogicalScanLookup **scansLookup, Identifier *identifier, Arena *arena)
@@ -66,17 +78,17 @@ static Expression *RewriteSelection(Expression *expression, Plan *plan, Arena *a
 
             return expression;
         }
+        case EXPR_NUMBER: {
+            return expression;
+        }
+        case EXPR_STRING: {
+            return expression;
+        }
         case EXPR_ADD:
         case EXPR_SUB:
         case EXPR_MUL:
-        case EXPR_DIV: {
-            InfixExpression *infix = (InfixExpression *)expression;
-
-            RewriteSelection(infix->left, plan, arena);
-            RewriteSelection(infix->right, plan, arena);
-
-            return expression;
-        }
+        case EXPR_DIV:
+            break;
         case EXPR_EQU: {
             InfixExpression *infix = (InfixExpression *)expression;
             
@@ -88,35 +100,78 @@ static Expression *RewriteSelection(Expression *expression, Plan *plan, Arena *a
                 //  This is a join
                 TermExpression *leftExpression = (TermExpression *)infix->left;
                 TermExpression *rightExpression = (TermExpression *)infix->right;
+
+                return NULL;
             }
             else if (infix->left->type == EXPR_IDENIFIER)
             {
                 //  This is a filter
-                TermExpression *id = (TermExpression *)expression;
+                TermExpression *id = (TermExpression *)infix->left;
                 LogicalScan *scan = ScanLookup(&plan->scansLookup, id->value.identifier.attribute->relationId);
-
-                AddToFilter(scan, expression, arena);
+                // if (scan->filter == NULL)
+                // {
+                //     scan->filter = expression;
+                // }
+                AddToFilter(scan, infix, arena);
+ 
+                return NULL;
             }
 
             return infix;
         }
-        case EXPR_AND:
-            break;
+        case EXPR_AND: {
+            InfixExpression *infix = (InfixExpression *)expression;
+
+            Expression *left = RewriteSelection(infix->left, plan, arena);
+            Expression *right = RewriteSelection(infix->right, plan, arena);
+
+            if (left == NULL && right == NULL)
+            {
+                return NULL;
+            }
+            else if (left == NULL)
+            {
+                return right;
+            }
+            else if (right == NULL)
+            {
+                return left;
+            }
+            else
+            {
+                return expression;
+            }
+        }
         case EXPR_OR:
             //  ORs kind of suck - I think the only time I can push them down
             //  is when the entire OR expression is limited to one table
             //  Otherwise, you gotta leave them till after all join of all
             //  referenced tables is done.  I think I'm just going to leave them
             //  till all the joins are done.
-            break;
+
+            
+            return expression;
         case EXPR_IN_QUERY:
-            break;   
+            break;
+        case EXPR_GROUP: {
+            ExpressionGroup *group = (ExpressionGroup *)expression;
+
+            if (group->containsOr == true)
+            {
+                return expression;
+            }
+
+            //  There are ways to push down further but I'm stopping here
+
+            return RewriteSelection(group->expression, plan, arena);
+        }
+            
     }
 }
 
 static void PushDownSelection(Plan *plan, Arena *arena)
 {
-    RewriteSelection(plan->selection->condition, plan, arena);
+    plan->selection->condition = RewriteSelection(plan->selection->condition, plan, arena);
 }
 
 bool ApplyHeuristics(Plan *plan, Arena *arena)

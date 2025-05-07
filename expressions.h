@@ -14,6 +14,7 @@ typedef struct Identifier
 
 typedef enum 
 {
+    EXPR_GROUP,
     EXPR_NUMBER,
     EXPR_STRING,
     EXPR_IDENIFIER,
@@ -31,6 +32,14 @@ typedef struct
 {
     ExpressionType type;
 } Expression;
+
+typedef struct
+{
+    ExpressionType type;
+    bool containsOr;
+    
+    Expression *expression;
+} ExpressionGroup;
 
 typedef struct 
 {
