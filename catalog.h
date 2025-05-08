@@ -15,11 +15,12 @@ typedef struct Attribute Attribute;
 typedef struct Relation Relation;
 typedef struct Relations Relations;
 typedef struct Attributes Attributes;
+typedef struct Indices Indices;
 
 struct Index
 {
-    const char *columns[MAX_ARRAY_SIZE];
-    int columnCount;
+    Attributes *indexed;
+    String name;
 };
 
 struct Attribute
@@ -36,6 +37,7 @@ struct Relation
     int id;
     String name;
     Attributes *attributes;
+    Indices *indices;
 };
 
 void BuildCatalog(Arena *arena);
