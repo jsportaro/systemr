@@ -103,6 +103,10 @@ static Relation *AddRelation(const char *name, Arena *arena)
 static Index *AddIndex(const char *name, Relation *relation)
 {
     //  Also, make sure the index name is globally unique.
+    //  That's more of a nice to have.  Nobody is creating
+    //  anything with DDL so I can trust the `BuildCatalog`
+    //  function to keep things unique.  But, if I expand 
+    //  this to something larger - don't forget!
     return NULL;
 }
 
