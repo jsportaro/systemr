@@ -100,6 +100,16 @@ static Relation *AddRelation(const char *name, Arena *arena)
     return relation;
 }
 
+static Index *AddIndex(const char *name, Relation *relation)
+{
+    return NULL;
+}
+
+static void IndexOnAttribute(Index *index, Attribute *attribute)
+{
+
+}
+
 Relation *GetRelation(String relation)
 {
     return LookupRelation(relation, NULL);
@@ -113,13 +123,20 @@ Attribute *GetAttribute(Relation *relation, String name)
 void BuildCatalog(Arena *arena)
 {
     Relation *relation = NULL;
+    Index *index = NULL;
 
     relation = AddRelation("person", arena);
-    AddAttribute(relation, "name", ATTR_CHAR, arena);
+    Attribute *name = AddAttribute(relation, "name", ATTR_CHAR, arena);
     AddAttribute(relation, "age", ATTR_INT, arena);
     AddAttribute(relation, "address_id", ATTR_INT, arena);
-    AddAttribute(relation, "id", ATTR_INT, arena);
-    
+    Attribute *personId = AddAttribute(relation, "id", ATTR_INT, arena);
+
+    index = AddIndex("idx_name", relation);
+    IndexOnAttribute(index, name);
+
+    index = AddIndex("idx_id", relation);
+    IndexOnAttribute(index, personId);
+
     relation = AddRelation("place", arena);
     AddAttribute(relation, "line_one", ATTR_CHAR, arena);
     AddAttribute(relation, "city", ATTR_CHAR, arena);
