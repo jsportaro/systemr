@@ -102,6 +102,7 @@ static Relation *AddRelation(const char *name, Arena *arena)
 
 static Index *AddIndex(const char *name, Relation *relation)
 {
+    //  Also, make sure the index name is globally unique.
     return NULL;
 }
 
@@ -131,10 +132,10 @@ void BuildCatalog(Arena *arena)
     AddAttribute(relation, "address_id", ATTR_INT, arena);
     Attribute *personId = AddAttribute(relation, "id", ATTR_INT, arena);
 
-    index = AddIndex("idx_name", relation);
+    index = AddIndex("idx_person_name", relation);
     IndexOnAttribute(index, name);
 
-    index = AddIndex("idx_id", relation);
+    index = AddIndex("idx_person_id", relation);
     IndexOnAttribute(index, personId);
 
     relation = AddRelation("place", arena);
@@ -142,5 +143,8 @@ void BuildCatalog(Arena *arena)
     AddAttribute(relation, "city", ATTR_CHAR, arena);
     AddAttribute(relation, "state", ATTR_CHAR, arena);
     AddAttribute(relation, "zip", ATTR_INT, arena);
-    AddAttribute(relation, "id", ATTR_INT, arena);
+    Attribute *placeId = AddAttribute(relation, "id", ATTR_INT, arena);
+
+    index = AddIndex("idx_place_id", relation);
+    IndexOnAttribute(index, placeId);
 }
