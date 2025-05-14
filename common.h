@@ -11,7 +11,8 @@
 #define MAX_ARRAY_SIZE 25
 #define MAX_HASH_SIZE 43
 
-#define EXECUTION_ARENA_SIZE (1<<16)
+#define EXECUTION_ARENA_SIZE (1<<17)
+#define OPTIMIZE_ARENA_SIZE (1<<17)
 
 #define UNUSED(x) (void)(x)
 

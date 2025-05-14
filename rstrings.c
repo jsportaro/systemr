@@ -21,7 +21,7 @@ String Copy(String s, Arena *arena)
         memcpy(buffer, s.data, s.length);
     }
 
-    return S(buffer);
+    return (String){ buffer, s.length, s.capacity };
 }
 
 String Concat(String head, String tail, Arena *arena)

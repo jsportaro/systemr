@@ -104,7 +104,7 @@ struct LogicalScan
     Relation *relation;
     ScanArgumentLookup *scanArgumentsLookup;
     ScanArguments scanArguments;
-    Expression *filter;
+    InfixExpression *filter;
 
     LogicalScan *next;
 };

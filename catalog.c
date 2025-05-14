@@ -85,7 +85,7 @@ static Relation *LookupRelation(String name, Arena *arena)
 
     *relations = NEW(arena, Relations);
     (*relations)->name = name;
-
+    
     return &(*relations)->relation;
 }
 

@@ -31,8 +31,8 @@ static void AddToFilter(LogicalScan *scan, InfixExpression *expression, Arena *a
     else
     {
         InfixExpression *and = NEW(arena, InfixExpression);
-        and->left = expression;
-        and->right = scan->filter;
+        and->left = (Expression *)expression;
+        and->right = (Expression *)scan->filter;
         and->type = EXPR_AND;
         scan->filter = and;
     }
@@ -40,7 +40,7 @@ static void AddToFilter(LogicalScan *scan, InfixExpression *expression, Arena *a
 
 static void AddScanArgument(LogicalScanLookup **scansLookup, Identifier *identifier, Arena *arena)
 {
-    LogicalScan *scan = ScanLookup(scansLookup, identifier->attribute->relationId);
+    LogicalScan *scan = ScanLookup(scansLookup, identifier->attribute->relation->id);
         
     if (AddScanArgumentLookup(&scan->scanArgumentsLookup, identifier->attribute->id, arena) == true)
     {
@@ -88,7 +88,7 @@ static Expression *RewriteSelection(Expression *expression, Plan *plan, Arena *a
         case EXPR_SUB:
         case EXPR_MUL:
         case EXPR_DIV:
-            break;
+            return expression;
         case EXPR_EQU: {
             InfixExpression *infix = (InfixExpression *)expression;
             
@@ -101,23 +101,23 @@ static Expression *RewriteSelection(Expression *expression, Plan *plan, Arena *a
                 TermExpression *leftExpression = (TermExpression *)infix->left;
                 TermExpression *rightExpression = (TermExpression *)infix->right;
 
+                UNUSED(leftExpression);
+                UNUSED(rightExpression);
+                
                 return NULL;
             }
             else if (infix->left->type == EXPR_IDENIFIER)
             {
                 //  This is a filter
                 TermExpression *id = (TermExpression *)infix->left;
-                LogicalScan *scan = ScanLookup(&plan->scansLookup, id->value.identifier.attribute->relationId);
-                // if (scan->filter == NULL)
-                // {
-                //     scan->filter = expression;
-                // }
+                LogicalScan *scan = ScanLookup(&plan->scansLookup, id->value.identifier.attribute->relation->id);
+
                 AddToFilter(scan, infix, arena);
  
                 return NULL;
             }
 
-            return infix;
+            return (Expression *)infix;
         }
         case EXPR_AND: {
             InfixExpression *infix = (InfixExpression *)expression;
@@ -148,10 +148,10 @@ static Expression *RewriteSelection(Expression *expression, Plan *plan, Arena *a
             //  Otherwise, you gotta leave them till after all join of all
             //  referenced tables is done.  I think I'm just going to leave them
             //  till all the joins are done.
-
-            
             return expression;
         case EXPR_IN_QUERY:
+            //  Not supported yet
+            abort();
             break;
         case EXPR_GROUP: {
             ExpressionGroup *group = (ExpressionGroup *)expression;
@@ -165,8 +165,10 @@ static Expression *RewriteSelection(Expression *expression, Plan *plan, Arena *a
 
             return RewriteSelection(group->expression, plan, arena);
         }
-            
     }
+
+    //  Bug territory
+    abort();
 }
 
 static void PushDownSelection(Plan *plan, Arena *arena)

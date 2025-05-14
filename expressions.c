@@ -3,6 +3,15 @@
 #include <expressions.h>
 #include <rstrings.h>
 
+String NumberToString(int i, Arena *arena)
+{
+    int maxSize = 15;
+    char *stringData = NEW(arena, char, maxSize);
+    sprintf(stringData, "%d", i);
+
+    return S(stringData);
+}
+
 String StringifyExpression(String string, Expression *expression, Arena *arena)
 {
     switch (expression->type)
@@ -10,6 +19,7 @@ String StringifyExpression(String string, Expression *expression, Arena *arena)
         case EXPR_IDENIFIER: {
             TermExpression *term = (TermExpression *)expression;
             Identifier *identifier = &term->value.identifier;
+
             if (identifier->qualifier.length != 0)
             {
                 string = Concat(string, identifier->qualifier, arena);
@@ -17,6 +27,13 @@ String StringifyExpression(String string, Expression *expression, Arena *arena)
             }
 
             string = Concat(string, identifier->name, arena);
+
+            if (identifier->attribute != NULL)
+            {
+                string = Concat(string, S(" [oid:"), arena);
+                string = Concat(string, NumberToString(identifier->attribute->id, arena), arena);
+                string = Concat(string, S("]"), arena);
+            }
 
             return string;
         }
@@ -31,9 +48,9 @@ String StringifyExpression(String string, Expression *expression, Arena *arena)
             return string;
         }
         case EXPR_NUMBER: {
-            // Don't want to implement an itoa function
-            // so, just give it a dummy value
-            return S("{num}");
+            TermExpression *term = (TermExpression *)expression;
+            String n = NumberToString(term->value.number, arena);
+            return n;
         }
         case EXPR_EQU: {
             InfixExpression *infix = (InfixExpression *)expression;
@@ -71,5 +88,15 @@ String StringifyExpression(String string, Expression *expression, Arena *arena)
 
             return string;
         }
+        case EXPR_ADD:
+        case EXPR_SUB:
+        case EXPR_MUL:
+        case EXPR_DIV:
+            return S("(math here)");
+        case EXPR_IN_QUERY:
+            return S("(Query here)");
     }
+
+    //  Bug
+    abort();
 }

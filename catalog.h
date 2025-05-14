@@ -27,7 +27,6 @@ struct Attribute
     int id;
     String name;
     AttributeType type;
-    int relationId;
     Relation *relation;
     uint32_t hash;
 };
