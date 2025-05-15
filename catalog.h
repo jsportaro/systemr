@@ -15,13 +15,9 @@ typedef struct Attribute Attribute;
 typedef struct Relation Relation;
 typedef struct Relations Relations;
 typedef struct Attributes Attributes;
-typedef struct Indices Indices;
-
-struct Index
-{
-    Attributes *indexed;
-    String name;
-};
+typedef struct Indexes Indexes;
+typedef struct RelationStatistics RelationStatistics;
+typedef struct IndexStatistics IndexStatistics;
 
 struct Attribute
 {
@@ -32,12 +28,33 @@ struct Attribute
     uint32_t hash;
 };
 
+struct RelationStatistics
+{
+    int ncard; // Cardinality of relation
+    int tcard; // Number of pages in the relation
+};
+
+struct IndexStatistics
+{
+    int nindx; // Number of pages in the index
+    int icard; // Number of distinct keys in index
+};
+
+struct Index
+{
+    Attributes *attributes;
+    String name;
+    IndexStatistics statistics;
+};
+
 struct Relation
 {
     int id;
     String name;
     Attributes *attributes;
-    Indices *indices;
+    Indexes *indexes;
+
+    RelationStatistics statistics;
 };
 
 void BuildCatalog(Arena *arena);

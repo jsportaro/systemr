@@ -68,8 +68,6 @@ void Optimize(char *sql, Arena optimizeArena)
                 filter.data);
         }
 
-
-
         if (scan->scanArguments.length > 0)
         {
             printf("\tArguments - ");

@@ -3,6 +3,7 @@
 #include <catalog.h>
 #include <rstrings.h>
 
+#include <stdarg.h>
 #include <string.h>
 
 typedef struct
@@ -14,15 +15,19 @@ typedef struct
 struct Relations
 {
     Relations *child[4];
-    String name;
     Relation relation;
 };
 
 struct Attributes
 {
     Attributes *child[4];
-    String name;
-    Attribute relation;
+    Attribute attribute;
+};
+
+struct Indexes
+{
+    Indexes *child[4];
+    Index index;
 };
 
 static Catalog catalog = {0};
@@ -31,9 +36,9 @@ static Attribute *LookupAttribute(Attributes **attributes, String name, Arena *a
 {
     for (uint64_t hash = HashString(name); *attributes; hash <<= 2)
     {
-        if (Equals(name, (*attributes)->name) == true)
+        if (Equals(name, (*attributes)->attribute.name) == true)
         {
-            return &(*attributes)->relation;
+            return &(*attributes)->attribute;
         }
 
         ptrdiff_t i = hash >> 62;
@@ -46,9 +51,9 @@ static Attribute *LookupAttribute(Attributes **attributes, String name, Arena *a
     }
 
     *attributes = NEW(arena, Attributes);
-    (*attributes)->name = name;
+    (*attributes)->attribute.name = name;
 
-    return &(*attributes)->relation;
+    return &(*attributes)->attribute;
 }
 
 static Attribute *AddAttribute(Relation *relation, const char *name, AttributeType type, Arena *arena)
@@ -70,7 +75,7 @@ static Relation *LookupRelation(String name, Arena *arena)
     uint64_t hash = 0;
     for (hash = HashString(name); *relations; hash <<= 2)
     {
-        if (Equals(name, (*relations)->name) == true)
+        if (Equals(name, (*relations)->relation.name) == true)
         {
             return &(*relations)->relation;
         }
@@ -84,7 +89,7 @@ static Relation *LookupRelation(String name, Arena *arena)
     }
 
     *relations = NEW(arena, Relations);
-    (*relations)->name = name;
+    (*relations)->relation.name = name;
     
     return &(*relations)->relation;
 }
@@ -100,19 +105,36 @@ static Relation *AddRelation(const char *name, Arena *arena)
     return relation;
 }
 
-static Index *AddIndex(const char *name, Relation *relation)
+static Index *GetOrCreateIndex(String name, Relation *relation, Arena *arena)
 {
     //  Also, make sure the index name is globally unique.
     //  That's more of a nice to have.  Nobody is creating
     //  anything with DDL so I can trust the `BuildCatalog`
     //  function to keep things unique.  But, if I expand 
     //  this to something larger - don't forget!
-    return NULL;
+
+    Indexes **indexes = &relation->indexes;
+
+    for (uint64_t hash = HashString(name); *indexes; hash <<= 2)
+    {
+        if (Equals(name, (*indexes)->index.name) == true)
+        {
+            return &(*indexes)->index;
+        }
+
+        ptrdiff_t i = hash >> 62;
+        indexes = &(*indexes)->child[i];
+    }
+
+    *indexes = NEW(arena, Indexes);
+    (*indexes)->index.name = name;
+
+    return &(*indexes)->index;
 }
 
-static void IndexOnAttribute(Index *index, Attribute *attribute)
+static void IndexOnAttribute(Index *index, Attribute *attribute, Arena *arena)
 {
-
+    LookupAttribute(&index->attributes, attribute->name, arena);
 }
 
 Relation *GetRelation(String relation)
@@ -131,24 +153,28 @@ void BuildCatalog(Arena *arena)
     Index *index = NULL;
 
     relation = AddRelation("person", arena);
-    Attribute *name = AddAttribute(relation, "name", ATTR_CHAR, arena);
-    AddAttribute(relation, "age", ATTR_INT, arena);
-    AddAttribute(relation, "address_id", ATTR_INT, arena);
     Attribute *personId = AddAttribute(relation, "id", ATTR_INT, arena);
+    Attribute *name = AddAttribute(relation, "name", ATTR_CHAR, arena);
+    AddAttribute(relation, "address_id", ATTR_INT, arena);
+    AddAttribute(relation, "age", ATTR_INT, arena);
 
-    index = AddIndex("idx_person_name", relation);
-    IndexOnAttribute(index, name);
+    index = GetOrCreateIndex(S("idx_person_name"), relation, arena);
+    IndexOnAttribute(index, name, arena);
+    index->statistics.icard = 10;
+    index->statistics.nindx = 1;
 
-    index = AddIndex("idx_person_id", relation);
-    IndexOnAttribute(index, personId);
+    index = GetOrCreateIndex(S("idx_person_id"), relation, arena);
+    IndexOnAttribute(index, personId, arena);
+    index->statistics.icard = 10;
+    index->statistics.nindx = 1;
 
     relation = AddRelation("place", arena);
+    Attribute *placeId = AddAttribute(relation, "id", ATTR_INT, arena);
     AddAttribute(relation, "line_one", ATTR_CHAR, arena);
     AddAttribute(relation, "city", ATTR_CHAR, arena);
     AddAttribute(relation, "state", ATTR_CHAR, arena);
     AddAttribute(relation, "zip", ATTR_INT, arena);
-    Attribute *placeId = AddAttribute(relation, "id", ATTR_INT, arena);
 
-    index = AddIndex("idx_place_id", relation);
-    IndexOnAttribute(index, placeId);
+    index = GetOrCreateIndex(S("idx_place_id"), relation, arena);
+    IndexOnAttribute(index, placeId, arena);
 }
