@@ -52,7 +52,7 @@ void Optimize(char *sql, Arena optimizeArena)
         printf("\tPost Heuristics WHERE - '()'\n");
     }
 
-    LogicalScan *scan = parsingContext.plan->scans;
+    Scan *scan = parsingContext.plan->scans;
 
     while (scan != NULL)
     {
@@ -68,13 +68,13 @@ void Optimize(char *sql, Arena optimizeArena)
                 filter.data);
         }
 
-        if (scan->scanArguments.length > 0)
+        if (scan->arguments.length > 0)
         {
             printf("\tArguments - ");
 
-            for (int i = 0; i < scan->scanArguments.length; i++)
+            for (int i = 0; i < scan->arguments.length; i++)
             {
-                Attribute *attribute = scan->scanArguments.data[i];
+                Attribute *attribute = scan->arguments.data[i];
                 printf(
                     "'%.*s' ",
                     (int)attribute->name.length,

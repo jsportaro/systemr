@@ -52,7 +52,7 @@ static bool AliasExists(Alias **aliases, String alias)
     return false;
 }
 
-static bool BuildAliasLookup(LogicalScan *scan, Alias **aliases, Arena *arena)
+static bool BuildAliasLookup(Scan *scan, Alias **aliases, Arena *arena)
 {
     bool success = true;
 
@@ -87,7 +87,7 @@ static bool VerifyUnresolvedIdentifiers(Alias **aliases, Identifier *unresolved)
     return success;
 }
 
-static bool VerifyAliasedSelections(Alias **aliases, LogicalSelection *selection)
+static bool VerifyAliasedSelections(Alias **aliases, Selection *selection)
 {
     if (selection != NULL)
     {
@@ -101,7 +101,7 @@ static bool VerifyAliasedProjections(Plan *plan, Alias **aliases)
 {
     // Check to make sure any identifiers like 'alias.column' actually use a 
     // alias present in the from clause
-    LogicalProjection *projection = plan->projections->first;
+    Projection *projection = plan->projections->first;
     bool verified = true;
 
     while (projection != NULL)
@@ -112,7 +112,7 @@ static bool VerifyAliasedProjections(Plan *plan, Alias **aliases)
         }
 
         verified &= VerifyUnresolvedIdentifiers(aliases, projection->unresolved);
-        projection = (LogicalProjection *)projection->child;
+        projection = (Projection *)projection->child;
     }
 
     return verified;

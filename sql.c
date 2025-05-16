@@ -10,7 +10,7 @@ void Finalize(ParsingContext *parsingContext, Plan* plan)
     parsingContext->plan = plan;
 }
 
-Plan *CreatePlan(ParsingContext *parsingContext, LogicalProjections *projections, PlanNode *tables, LogicalSelection *selection)
+Plan *CreatePlan(ParsingContext *parsingContext, Projections *projections, PlanNode *tables, Selection *selection)
 {
     UNUSED(tables); //  I think I can get rid of tables entirely
 
@@ -27,9 +27,9 @@ Plan *CreatePlan(ParsingContext *parsingContext, LogicalProjections *projections
     return plan;
 }
 
-LogicalProjections *BeginProjections(ParsingContext *parsingContext, LogicalProjection *first)
+Projections *BeginProjections(ParsingContext *parsingContext, Projection *first)
 {
-    LogicalProjections *projections = NEW(parsingContext->parseArena, LogicalProjections);
+    Projections *projections = NEW(parsingContext->parseArena, Projections);
 
     projections->first = first;
     projections->last = first;
@@ -37,16 +37,16 @@ LogicalProjections *BeginProjections(ParsingContext *parsingContext, LogicalProj
     return projections;
 }
 
-LogicalProjections *LinkProjection(LogicalProjections *projections, LogicalProjection *next)
+Projections *LinkProjection(Projections *projections, Projection *next)
 {
     projections->last->child = (PlanNode *)next;
     projections->last = next;
     return projections;
 }
 
-LogicalProjection *CreateProjectionAll(ParsingContext *parsingContext)
+Projection *CreateProjectionAll(ParsingContext *parsingContext)
 {
-    LogicalProjection *projection = NEW(parsingContext->parseArena, LogicalProjection);
+    Projection *projection = NEW(parsingContext->parseArena, Projection);
     
     parsingContext->allAttributes = true;
     projection->type = LPLAN_PROJECT_ALL;
@@ -54,11 +54,11 @@ LogicalProjection *CreateProjectionAll(ParsingContext *parsingContext)
     return projection;
 }
 
-LogicalProjection *CreateProjection(ParsingContext *parsingContext, const char *as, Expression *expression)
+Projection *CreateProjection(ParsingContext *parsingContext, const char *as, Expression *expression)
 {
     UNUSED(as);
 
-    LogicalProjection *projection = NEW(parsingContext->parseArena, LogicalProjection);
+    Projection *projection = NEW(parsingContext->parseArena, Projection);
 
     projection->projected = expression;
     projection->type = LPLAN_PROJECT;
@@ -69,14 +69,14 @@ LogicalProjection *CreateProjection(ParsingContext *parsingContext, const char *
     return projection;
 }
 
-PlanNode *ScanToPlan(LogicalScan *scan)
+PlanNode *ScanToPlan(Scan *scan)
 {
     return (PlanNode *)scan;
 }
 
-PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, LogicalScan *right)
+PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, Scan *right)
 {
-    LogicalJoin *join = NEW(parsingContext->parseArena, LogicalJoin);
+    Join *join = NEW(parsingContext->parseArena, Join);
 
     join->left = left;
     join->right = (PlanNode *)right;
@@ -85,9 +85,9 @@ PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, LogicalScan
     return (PlanNode *)join;
 }
 
-LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, const char *tableAlias)
+Scan *CreateScan(ParsingContext *parsingContext, const char *tableName, const char *tableAlias)
 {
-    LogicalScan *scan = NEW(parsingContext->parseArena, LogicalScan);
+    Scan *scan = NEW(parsingContext->parseArena, Scan);
 
     scan->name = S(tableName);
     scan->type = LPLAN_SCAN;
@@ -213,9 +213,9 @@ Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left,
     return (Expression *)expression;
 }
 
-LogicalSelection *CreateSelection(ParsingContext *parsingContext, Expression *where)
+Selection *CreateSelection(ParsingContext *parsingContext, Expression *where)
 {
-    LogicalSelection *selection = NEW(parsingContext->parseArena, LogicalSelection);
+    Selection *selection = NEW(parsingContext->parseArena, Selection);
 
     selection->condition = where;
     selection->unresolved = parsingContext->unresolved;

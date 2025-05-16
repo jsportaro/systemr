@@ -59,8 +59,8 @@ typedef struct
 {
     bool success;
     Plan *plan;
-    LogicalScan *scans;
-    LogicalSelection *selection;
+    Scan *scans;
+    Selection *selection;
     Arena *parseArena;
     Identifier *unresolved;
     bool allAttributes;
@@ -75,22 +75,22 @@ typedef struct
     bool allAttributes;
 
     Plan *plan;
-    LogicalScan *scans;
+    Scan *scans;
 } ParsingResult;
 
 void Finalize(ParsingContext *parsingContext, Plan* plan);
 
-Plan *CreatePlan(ParsingContext *parsingContext, LogicalProjections *projections, PlanNode *tables, LogicalSelection *selection);
+Plan *CreatePlan(ParsingContext *parsingContext, Projections *projections, PlanNode *tables, Selection *selection);
 
-LogicalProjections *BeginProjections(ParsingContext *parsingContext, LogicalProjection *first);
-LogicalProjections *LinkProjection(LogicalProjections *projections, LogicalProjection *next);
-LogicalProjection *CreateProjection(ParsingContext *parsingContext, const char *as, Expression *expression);
-LogicalProjection *CreateProjectionAll(ParsingContext *parsingContext);
+Projections *BeginProjections(ParsingContext *parsingContext, Projection *first);
+Projections *LinkProjection(Projections *projections, Projection *next);
+Projection *CreateProjection(ParsingContext *parsingContext, const char *as, Expression *expression);
+Projection *CreateProjectionAll(ParsingContext *parsingContext);
 
-PlanNode *ScanToPlan(LogicalScan *scan);
-PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, LogicalScan *right);       
+PlanNode *ScanToPlan(Scan *scan);
+PlanNode *CreateJoin(ParsingContext *parsingContext, PlanNode *left, Scan *right);       
 
-LogicalScan *CreateScan(ParsingContext *parsingContext, const char *tableName, const char *tableAlias);
+Scan *CreateScan(ParsingContext *parsingContext, const char *tableName, const char *tableAlias);
 
 Expression *CreateExpressionGroup(ParsingContext *parsingContext, Expression *expression);
 Expression *CreateStringExpression(ParsingContext *parsingContext, const char* string);
@@ -101,6 +101,6 @@ Expression *CreateAndExpression(ParsingContext *parsingContext, Expression *left
 Expression *CreateOrExpression(ParsingContext *parsingContext, Expression *left, Expression *right);
 Expression *CreateInExpression(ParsingContext *parsingContext, Expression *left, Plan *plan);
 
-LogicalSelection *CreateSelection(ParsingContext *parsingContext, Expression *where);
+Selection *CreateSelection(ParsingContext *parsingContext, Expression *where);
 
 #endif

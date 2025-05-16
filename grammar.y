@@ -47,11 +47,11 @@ void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s);
 %token WHERE   
 
 %type <Plan *> select_stmt
-%type <LogicalProjections *> select_expr_list
-%type <LogicalProjection *> select_expr
+%type <Projections *> select_expr_list
+%type <Projection *> select_expr
 %type <PlanNode *> table_refs 
-%type <LogicalScan *> table_ref
-%type <LogicalSelection *> opt_where
+%type <Scan *> table_ref
+%type <Selection *> opt_where
 %type <Expression *> expr
 %type <const char *> table_alias
 

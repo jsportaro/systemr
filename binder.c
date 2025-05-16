@@ -37,7 +37,7 @@ static AliasBinding *LookupAlias(AliasBinding **aliasBinding, String alias, Aren
     return *aliasBinding; 
 }  
 
-static LogicalScanLookup *AddScanLookup(LogicalScanLookup **scansLookup, LogicalScan *scan, Arena *arena)
+static LogicalScanLookup *AddScanLookup(LogicalScanLookup **scansLookup, Scan *scan, Arena *arena)
 {
     uint64_t h = scan->relation->id;
     while (*scansLookup)
@@ -63,7 +63,7 @@ static LogicalScanLookup *AddScanLookup(LogicalScanLookup **scansLookup, Logical
     return *scansLookup; 
 }
 
-static bool BindScans(LogicalScanLookup **scansLookup, LogicalScan *scans, AliasBinding **aliasLookup, Arena *executionArena)
+static bool BindScans(LogicalScanLookup **scansLookup, Scan *scans, AliasBinding **aliasLookup, Arena *executionArena)
 {
     bool success = true;
     
@@ -136,14 +136,14 @@ static bool AttemptBindWithAlias(Identifier **unresolved, AliasBinding **aliasLo
     return success;
 }
 
-static bool AttemptBindAnyRelation(Identifier **unresolved, LogicalScan *scans)
+static bool AttemptBindAnyRelation(Identifier **unresolved, Scan *scans)
 {
     bool ambiguous = false;
     bool found = false;
 
     while (*unresolved != NULL)
     {
-        LogicalScan *current = scans;
+        Scan *current = scans;
 
         ambiguous = false;
         found = false;
@@ -184,22 +184,22 @@ static bool AttemptBindAnyRelation(Identifier **unresolved, LogicalScan *scans)
     return *unresolved == NULL;
 }
 
-static bool AttemptBindProjection(LogicalProjection *projection, AliasBinding **aliasLookup, LogicalScan *scans)
+static bool AttemptBindProjection(Projection *projection, AliasBinding **aliasLookup, Scan *scans)
 {
     return AttemptBindWithAlias(&projection->unresolved, aliasLookup) &&
            AttemptBindAnyRelation(&projection->unresolved, scans);
 }
 
-static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, LogicalScan *scans)
+static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, Scan *scans)
 {
-    LogicalProjection *current = plan->projections->first;
+    Projection *current = plan->projections->first;
     bool success = true;
 
     while (current != NULL)
     {
         if (current->type == LPLAN_PROJECT)
         {
-            success &= AttemptBindProjection((LogicalProjection *)current, aliasLookup, scans);
+            success &= AttemptBindProjection((Projection *)current, aliasLookup, scans);
             goto Next;
         }
         else if (current->type == LPLAN_PROJECT_ALL)
@@ -212,13 +212,13 @@ static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, Logic
         }
 
         Next:
-            current = (LogicalProjection *)(current)->child;
+            current = (Projection *)(current)->child;
     }
 
     return success;
 }
 
-static bool AttemptBindSelection(LogicalSelection *selection, AliasBinding **aliasLookup, LogicalScan *scans)
+static bool AttemptBindSelection(Selection *selection, AliasBinding **aliasLookup, Scan *scans)
 {
     if (selection == NULL)
     {

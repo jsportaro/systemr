@@ -22,7 +22,7 @@ static bool AddScanArgumentLookup(ScanArgumentLookup **scanArumentLookup, int at
     return true; 
 }  
 
-static void AddToFilter(LogicalScan *scan, InfixExpression *expression, Arena *arena)
+static void AddToFilter(Scan *scan, InfixExpression *expression, Arena *arena)
 {
     if (scan->filter == NULL)
     {
@@ -40,17 +40,17 @@ static void AddToFilter(LogicalScan *scan, InfixExpression *expression, Arena *a
 
 static void AddScanArgument(LogicalScanLookup **scansLookup, Identifier *identifier, Arena *arena)
 {
-    LogicalScan *scan = ScanLookup(scansLookup, identifier->attribute->relation->id);
+    Scan *scan = ScanLookup(scansLookup, identifier->attribute->relation->id);
         
-    if (AddScanArgumentLookup(&scan->scanArgumentsLookup, identifier->attribute->id, arena) == true)
+    if (AddScanArgumentLookup(&scan->argumentsLookup, identifier->attribute->id, arena) == true)
     {
-        *Push(&scan->scanArguments, arena) = identifier->attribute;
+        *Push(&scan->arguments, arena) = identifier->attribute;
     }
 }
 
 static void PushDownProjections(Plan *plan, Arena *arena)
 {
-    LogicalProjection *projection = plan->projections->first;
+    Projection *projection = plan->projections->first;
 
     while (projection != NULL)
     {
@@ -63,7 +63,7 @@ static void PushDownProjections(Plan *plan, Arena *arena)
             identifier = identifier->next;
         }
 
-        projection = (LogicalProjection *)projection->child;
+        projection = (Projection *)projection->child;
     }
 }
 
@@ -110,7 +110,7 @@ static Expression *RewriteSelection(Expression *expression, Plan *plan, Arena *a
             {
                 //  This is a filter
                 TermExpression *id = (TermExpression *)infix->left;
-                LogicalScan *scan = ScanLookup(&plan->scansLookup, id->value.identifier.attribute->relation->id);
+                Scan *scan = ScanLookup(&plan->scansLookup, id->value.identifier.attribute->relation->id);
 
                 AddToFilter(scan, infix, arena);
  

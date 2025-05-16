@@ -20,23 +20,23 @@ typedef struct
 } PlanNode;
 
 typedef struct LogicalRename LogicalRename;
-typedef struct LogicalProjection LogicalProjection;
-typedef struct LogicalSelection LogicalSelection;
-typedef struct LogicalJoin LogicalJoin;
-typedef struct LogicalScan LogicalScan;
+typedef struct Projection Projection;
+typedef struct Selection Selection;
+typedef struct Join Join;
+typedef struct Scan Scan;
 typedef struct LogicalScanLookup LogicalScanLookup;
 
 typedef struct
 {
-   LogicalProjection *first;
-   LogicalProjection *last;
-} LogicalProjections;
+   Projection *first;
+   Projection *last;
+} Projections;
 
 typedef struct Plan
 {
-    LogicalProjections *projections;
-    LogicalSelection *selection;
-    LogicalScan *scans;
+    Projections *projections;
+    Selection *selection;
+    Scan *scans;
 
     LogicalScanLookup *scansLookup;
 } Plan;
@@ -46,7 +46,7 @@ struct LogicalRename
     const char *name;
 };
 
-struct LogicalProjection
+struct Projection
 {
     PlanNodeType type;
     PlanNode *child;
@@ -57,7 +57,7 @@ struct LogicalProjection
     Identifier *unresolved;
 };
 
-struct LogicalSelection
+struct Selection
 {
     PlanNodeType type;
     PlanNode *child;
@@ -67,7 +67,7 @@ struct LogicalSelection
     Identifier *unresolved;
 };
 
-struct LogicalJoin
+struct Join
 {
     PlanNodeType type;
 
@@ -94,7 +94,7 @@ struct ScanArgumentLookup
     int attributeId;
 };
 
-struct LogicalScan
+struct Scan
 {
     PlanNodeType type;
 
@@ -102,11 +102,11 @@ struct LogicalScan
     String alias;
 
     Relation *relation;
-    ScanArgumentLookup *scanArgumentsLookup;
-    ScanArguments scanArguments;
+    ScanArgumentLookup *argumentsLookup;
+    ScanArguments arguments;
     InfixExpression *filter;
 
-    LogicalScan *next;
+    Scan *next;
 };
 
 struct LogicalScanLookup
@@ -114,9 +114,9 @@ struct LogicalScanLookup
     LogicalScanLookup *child[4];
     
     int relationId;
-    LogicalScan *scan;
+    Scan *scan;
 };
 
-LogicalScan *ScanLookup(LogicalScanLookup **scansLookup, int relationId);
+Scan *ScanLookup(LogicalScanLookup **scansLookup, int relationId);
 
 #endif
