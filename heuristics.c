@@ -38,9 +38,9 @@ static void AddToFilter(Scan *scan, InfixExpression *expression, Arena *arena)
     }
 }
 
-static void AddScanArgument(LogicalScanLookup **scansLookup, Identifier *identifier, Arena *arena)
+static void AddScanArgument(ScanLookup **scansLookup, Identifier *identifier, Arena *arena)
 {
-    Scan *scan = ScanLookup(scansLookup, identifier->attribute->relation->id);
+    Scan *scan = GetScan(scansLookup, identifier->attribute->relation->id);
         
     if (AddScanArgumentLookup(&scan->argumentsLookup, identifier->attribute->id, arena) == true)
     {
@@ -110,7 +110,7 @@ static Expression *RewriteSelection(Expression *expression, Plan *plan, Arena *a
             {
                 //  This is a filter
                 TermExpression *id = (TermExpression *)infix->left;
-                Scan *scan = ScanLookup(&plan->scansLookup, id->value.identifier.attribute->relation->id);
+                Scan *scan = GetScan(&plan->scansLookup, id->value.identifier.attribute->relation->id);
 
                 AddToFilter(scan, infix, arena);
  

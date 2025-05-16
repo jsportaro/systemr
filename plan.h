@@ -5,45 +5,46 @@
 #include <expressions.h>
 #include <rstrings.h>
 
-typedef enum PlanNodeType
+typedef struct Plan Plan;
+typedef enum PlanNodeType PlanNodeType;
+typedef struct PlanNode PlanNode;
+typedef struct Projections Projections;
+typedef struct LogicalRename LogicalRename;
+typedef struct Projection Projection;
+typedef struct Selection Selection;
+typedef struct Join Join;
+typedef struct Scan Scan;
+typedef struct ScanLookup ScanLookup;
+typedef struct ScanArguments ScanArguments;
+typedef struct ScanArgumentLookup ScanArgumentLookup;
+
+enum PlanNodeType
 {
     LPLAN_SELECT,
     LPLAN_PROJECT,
     LPLAN_PROJECT_ALL,
     LPLAN_JOIN,
     LPLAN_SCAN,
-} PlanNodeType;
+};
 
-typedef struct
+struct PlanNode
 {
     PlanNodeType type;
-} PlanNode;
+};
 
-typedef struct LogicalRename LogicalRename;
-typedef struct Projection Projection;
-typedef struct Selection Selection;
-typedef struct Join Join;
-typedef struct Scan Scan;
-typedef struct LogicalScanLookup LogicalScanLookup;
-
-typedef struct
+struct Projections
 {
    Projection *first;
    Projection *last;
-} Projections;
+};
 
-typedef struct Plan
+struct Plan
 {
     Projections *projections;
     Selection *selection;
     Scan *scans;
 
-    LogicalScanLookup *scansLookup;
-} Plan;
-
-struct LogicalRename
-{
-    const char *name;
+    ScanLookup *scansLookup;
 };
 
 struct Projection
@@ -61,6 +62,7 @@ struct Selection
 {
     PlanNodeType type;
     PlanNode *child;
+    
     bool attemptPushdown;
     
     Expression *condition;
@@ -76,9 +78,6 @@ struct Join
 
     Expression *joinBy;
 };
-
-typedef struct ScanArguments ScanArguments;
-typedef struct ScanArgumentLookup ScanArgumentLookup;
 
 struct ScanArguments
 {
@@ -109,14 +108,14 @@ struct Scan
     Scan *next;
 };
 
-struct LogicalScanLookup
+struct ScanLookup
 {
-    LogicalScanLookup *child[4];
+    ScanLookup *child[4];
     
     int relationId;
     Scan *scan;
 };
 
-Scan *ScanLookup(LogicalScanLookup **scansLookup, int relationId);
+Scan *GetScan(ScanLookup **scansLookup, int relationId);
 
 #endif

@@ -37,7 +37,7 @@ static AliasBinding *LookupAlias(AliasBinding **aliasBinding, String alias, Aren
     return *aliasBinding; 
 }  
 
-static LogicalScanLookup *AddScanLookup(LogicalScanLookup **scansLookup, Scan *scan, Arena *arena)
+static ScanLookup *AddScanLookup(ScanLookup **scansLookup, Scan *scan, Arena *arena)
 {
     uint64_t h = scan->relation->id;
     while (*scansLookup)
@@ -56,14 +56,14 @@ static LogicalScanLookup *AddScanLookup(LogicalScanLookup **scansLookup, Scan *s
         return NULL;
     }
 
-    *scansLookup = NEW(arena, LogicalScanLookup);
+    *scansLookup = NEW(arena, ScanLookup);
     (*scansLookup)->relationId = scan->relation->id;
     (*scansLookup)->scan = scan;
     
     return *scansLookup; 
 }
 
-static bool BindScans(LogicalScanLookup **scansLookup, Scan *scans, AliasBinding **aliasLookup, Arena *executionArena)
+static bool BindScans(ScanLookup **scansLookup, Scan *scans, AliasBinding **aliasLookup, Arena *executionArena)
 {
     bool success = true;
     

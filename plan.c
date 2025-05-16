@@ -2,7 +2,7 @@
 #include <common.h>
 #include <plan.h>
 
-Scan *ScanLookup(LogicalScanLookup **scansLookup, int relationId)
+Scan *GetScan(ScanLookup **scansLookup, int relationId)
 {
     for (uint64_t h = relationId; *scansLookup; h <<= 2)
     {
