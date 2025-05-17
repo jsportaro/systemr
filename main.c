@@ -52,10 +52,11 @@ void Optimize(char *sql, Arena optimizeArena)
         printf("\tPost Heuristics WHERE - '()'\n");
     }
 
-    Scan *scan = parsingContext.plan->scans;
 
-    while (scan != NULL)
+    for (int i = 0; i < parsingContext.scanList.length; i++)
     {
+        Scan *scan = parsingContext.plan->scanList.data[i];
+
         printf("Scan '%.*s'\n", (int)scan->name.length, scan->name.data);
 
         if (scan->filter != NULL)
@@ -83,7 +84,6 @@ void Optimize(char *sql, Arena optimizeArena)
 
             printf("\n");
         }
-        scan = scan->next;
     }
 
     printf("\nFinished\n");
@@ -93,7 +93,7 @@ void RunTests(Arena *executionArena)
 {
     char* sqls[] = 
     {
-        "SELECT p.name FROM person p Where p.name = 'joe' and name = 'mike' p.age = 15",
+        "SELECT p.name FROM person p Where p.name = 'joe' and name = 'mike' and p.age = 15",
         "SELECT person.name FROM person, place Where name = 'joe' and name = 'mike' and place.id = 100 and person.age = 15",
         "SELECT person.name FROM person, place Where name = 'joe'",
         "SELECT person.name FROM person, place Where name = 'joe' and (person.address_id = 1 or name = 'mike')",

@@ -52,16 +52,13 @@ static bool AliasExists(Alias **aliases, String alias)
     return false;
 }
 
-static bool BuildAliasLookup(Scan *scan, Alias **aliases, Arena *arena)
+static bool BuildAliasLookup(ScanList scans, Alias **aliases, Arena *arena)
 {
     bool success = true;
 
-    while (scan != NULL)
+    for (int i = 0; i < scans.length; i++)
     {
-        success &= AddAlias(aliases, scan->alias, arena);
-
-        //  Todo:  Add some kind of messaging
-        scan = scan->next;
+        success &= AddAlias(aliases, scans.data[i]->alias, arena);
     }
 
     return success;
@@ -128,7 +125,7 @@ static void ParsePostProcessing(Plan *plan, Arena *parseArena, bool *success)
     // That's for cases like:
     //      SELECT p.name, address.line_one FROM people p, address
     // We only need one look up table for resolution of address.line_one
-    if (BuildAliasLookup(plan->scans, &aliases, parseArena) == false)
+    if (BuildAliasLookup(plan->scanList, &aliases, parseArena) == false)
     {
         *success &= false;
 

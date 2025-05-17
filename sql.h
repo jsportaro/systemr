@@ -60,6 +60,7 @@ typedef struct
     bool success;
     Plan *plan;
     Scan *scans;
+    ScanList scanList;
     Selection *selection;
     Arena *parseArena;
     Identifier *unresolved;

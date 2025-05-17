@@ -135,8 +135,7 @@ expr:
 
 %%
 
-void
-yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s)
+void yyerror(yyscan_t *locp, ParsingContext *parsingContext, const char *s)
 {
     UNUSED(locp);
     UNUSED(parsingContext);

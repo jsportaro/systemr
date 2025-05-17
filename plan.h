@@ -15,6 +15,7 @@ typedef struct Selection Selection;
 typedef struct Join Join;
 typedef struct Scan Scan;
 typedef struct ScanLookup ScanLookup;
+typedef struct ScanList ScanList;
 typedef struct ScanArguments ScanArguments;
 typedef struct ScanArgumentLookup ScanArgumentLookup;
 
@@ -38,12 +39,18 @@ struct Projections
    Projection *last;
 };
 
+struct ScanList
+{
+    Scan **data;
+    ptrdiff_t length;
+    ptrdiff_t capacity;
+};
+
 struct Plan
 {
     Projections *projections;
     Selection *selection;
-    Scan *scans;
-
+    ScanList scanList;
     ScanLookup *scansLookup;
 };
 
@@ -104,8 +111,6 @@ struct Scan
     ScanArgumentLookup *argumentsLookup;
     ScanArguments arguments;
     InfixExpression *filter;
-
-    Scan *next;
 };
 
 struct ScanLookup

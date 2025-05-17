@@ -1,5 +1,6 @@
 #include <arena.h>
 #include <sql.h>
+#include <slice.h>
 #include <rstrings.h>
 
 #include <string.h>
@@ -18,7 +19,7 @@ Plan *CreatePlan(ParsingContext *parsingContext, Projections *projections, PlanN
     Plan *plan = NEW(parsingContext->parseArena, Plan);
 
     plan->projections = projections;
-    plan->scans = parsingContext->scans;
+    plan->scanList = parsingContext->scanList;
     plan->selection = selection;
 
     parsingContext->scans = NULL;
@@ -91,7 +92,6 @@ Scan *CreateScan(ParsingContext *parsingContext, const char *tableName, const ch
 
     scan->name = S(tableName);
     scan->type = LPLAN_SCAN;
-    scan->next = parsingContext->scans;
     parsingContext->scans = scan;
     scan->filter = NULL;
     //  Rewrite to force all table references to have an alias
@@ -99,6 +99,8 @@ Scan *CreateScan(ParsingContext *parsingContext, const char *tableName, const ch
     //  For example:
     //      SELECT table1.col1 From table1
     scan->alias = tableAlias == NULL ? scan->name : S(tableAlias);
+
+    *Push(&parsingContext->scanList, parsingContext->parseArena) = scan;
 
     return scan;
 }
