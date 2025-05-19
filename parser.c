@@ -64,52 +64,20 @@ static bool BuildAliasLookup(ScanList scans, Alias **aliases, Arena *arena)
     return success;
 }
 
-static bool VerifyUnresolvedIdentifiers(Alias **aliases, Identifier *unresolved)
+static bool VerifyAliasedIdentifiers(Plan *plan, Alias **aliases)
 {
-    //  Look through Identifiers to see if they match up with a table alias.
-    //  For identifiers with a qualifier
-    //     -> If matches a alias; replace qualifier with table name
-    //     -> If matches neither table or alias; error!
-    bool success = true;
-    while (unresolved != NULL)
-    {
-        if (unresolved->qualifier.length != 0)
-        {
-            success &= AliasExists(aliases, unresolved->qualifier);
-        }
-
-        unresolved = unresolved->next;
-    }
-
-    return success;
-}
-
-static bool VerifyAliasedSelections(Alias **aliases, Selection *selection)
-{
-    if (selection != NULL)
-    {
-        return VerifyUnresolvedIdentifiers(aliases, selection->unresolved);
-    }
-
-    return true;
-}
-
-static bool VerifyAliasedProjections(Plan *plan, Alias **aliases)
-{
-    // Check to make sure any identifiers like 'alias.column' actually use a 
-    // alias present in the from clause
-    Projection *projection = plan->projections->first;
     bool verified = true;
 
-    while (projection != NULL)
+    // Check to make sure any identifiers like 'alias.column' actually use a 
+    // alias present in the from clause
+    for (int i = 0; i < plan->referenced.length; i++)
     {
-        if (projection->type == LPLAN_PROJECT_ALL)
-        {
-            continue;
-        }
+        Identifier *unresolved = plan->referenced.data[i];
 
-        verified &= VerifyUnresolvedIdentifiers(aliases, projection->unresolved);
-        projection = (Projection *)projection->child;
+        if (unresolved->qualifier.length > 0)
+        {
+            verified &= AliasExists(aliases, unresolved->qualifier);
+        }
     }
 
     return verified;
@@ -132,8 +100,7 @@ static void ParsePostProcessing(Plan *plan, Arena *parseArena, bool *success)
         return;
     }
 
-    *success &= VerifyAliasedProjections(plan, &aliases);
-    *success &= VerifyAliasedSelections(&aliases, plan->selection);
+    *success &= VerifyAliasedIdentifiers(plan, &aliases);
 
     return;
 }

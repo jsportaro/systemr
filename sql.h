@@ -28,8 +28,6 @@ typedef struct
     String alias;
 } TableReference;
 
-
-
 typedef struct
 {
     TableReference *tableReferences[MAX_ARRAY_SIZE];
@@ -63,7 +61,8 @@ typedef struct
     ScanList scanList;
     Selection *selection;
     Arena *parseArena;
-    Identifier *unresolved;
+    Referenced referenced;
+
     bool allAttributes;
 
     int orCount;

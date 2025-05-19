@@ -12,8 +12,6 @@ struct AliasBinding
     AliasBinding *child[4];
     String alias;
     Relation *relation;
-
-    AliasBinding *next;
 };
 
 static AliasBinding *LookupAlias(AliasBinding **aliasBinding, String alias, Arena *arena)
@@ -91,137 +89,90 @@ static bool BindScans(ScanLookup **scansLookup, ScanList scanList, AliasBinding 
     return success;
 }
 
-static bool AttemptBindWithAlias(Identifier **unresolved, AliasBinding **aliasLookup)
+static bool TryBindWithAlias(Identifier *unresolved, AliasBinding **aliasLookup)
 {
-    bool success = true;
+    bool success = false;
 
-    while (*unresolved != NULL)
+    if (unresolved->qualifier.length > 0)
     {
-        if ((*unresolved)->qualifier.length > 0)
-        {
-            AliasBinding *aliasBinding = LookupAlias(aliasLookup, (*unresolved)->qualifier, NULL);
-            
-            if (aliasBinding == NULL)
-            {
-                //  This is an error condition that should never happen
-                //  We checked that
-                //  1) The alias exists in the SQL statement
-                //  2) All tables have already been found
-                success &= false;
-                fprintf(stderr, "Error - could not find relation %.*s\n", (int)(*unresolved)->qualifier.length, (*unresolved)->qualifier.data);
-                goto Next;
-            }
-
-            Attribute *attribute = GetAttribute(aliasBinding->relation, (*unresolved)->name);
-
-            if (attribute == NULL)
-            {
-                //  This is a _real_ error condition
-                success &= false;
-                fprintf(stderr, "Error - could not find attribute %.*s\n", (int)(*unresolved)->name.length, (*unresolved)->name.data);
-                goto Next;   
-            }
-
-            (*unresolved)->attribute = attribute;
-
-            *unresolved = (*unresolved)->next;
-
-            continue;
-        }
+        AliasBinding *aliasBinding = LookupAlias(aliasLookup, unresolved->qualifier, NULL);
         
-        Next:
-            unresolved = &(*unresolved)->next;
-    }
+        if (aliasBinding == NULL)
+        {
+            //  This is an error condition that should never happen
+            //  We checked that
+            //  1) The alias exists in the SQL statement
+            //  2) All tables have already been found
+            success &= false;
+            fprintf(stderr, "Error - could not find relation %.*s\n", (int)unresolved->qualifier.length, unresolved->qualifier.data);
+            goto EndAttempt;
+        }
 
+        Attribute *attribute = GetAttribute(aliasBinding->relation, unresolved->name);
+
+        if (attribute == NULL)
+        {
+            //  This is a _real_ error condition
+            success &= false;
+            fprintf(stderr, "Error - could not find attribute %.*s\n", (int)unresolved->name.length, unresolved->name.data);
+            goto EndAttempt;   
+        }
+
+        unresolved->attribute = attribute;
+        success = true;
+    }
+EndAttempt:
     return success;
 }
 
-static bool AttemptBindAnyRelation(Identifier **unresolved, ScanList scans)
+static bool TryBindAnyRelation(Identifier *unresolved, ScanList scans)
 {
     bool ambiguous = false;
     bool found = false;
 
-    while (*unresolved != NULL)
+    for (int i = 0; i < scans.length; i++)
     {
-        ambiguous = false;
-        found = false;
+        Scan *current = scans.data[i];
 
-        for (int i = 0; i < scans.length; i++)
+        Attribute *attribute = GetAttribute(current->relation, unresolved->name);
+
+        if (attribute != NULL && unresolved->attribute == NULL)
         {
-            Scan *current = scans.data[i];
-
-            Attribute *attribute = GetAttribute(current->relation, (*unresolved)->name);
-
-            if (attribute != NULL && (*unresolved)->attribute == NULL)
-            {
-                found = true;
-                (*unresolved)->attribute = attribute;
-            }
-            else if (attribute != NULL && (*unresolved)->attribute != NULL)
-            {
-                //  Error conditions - ambiguous identifier (found in more than one relation)
-                fprintf(stderr, "Error - ambiguous attribute %.*s\n", (int)(*unresolved)->name.length, (*unresolved)->name.data);
-
-                ambiguous = true;
-            }
+            found = true;
+            unresolved->attribute = attribute;
         }
+        else if (attribute != NULL && unresolved->attribute != NULL)
+        {
+            //  Error conditions - ambiguous identifier (found in more than one relation)
+            fprintf(stderr, "Error - ambiguous attribute %.*s\n", (int)unresolved->name.length, unresolved->name.data);
 
-        if (found == true && ambiguous == false)
-        {
-            *unresolved = (*unresolved)->next;
-        }
-        else
-        {
-            unresolved = &(*unresolved)->next;
+            ambiguous = true;
         }
     }
 
-    return *unresolved == NULL;
+    return found == true && ambiguous == false;
 }
 
-static bool AttemptBindProjection(Projection *projection, AliasBinding **aliasLookup, ScanList scans)
+static bool BindIdentifiers(Referenced referenced, AliasBinding **aliasLookup, ScanList scans)
 {
-    return AttemptBindWithAlias(&projection->unresolved, aliasLookup) &&
-           AttemptBindAnyRelation(&projection->unresolved, scans);
-}
-
-static bool AttemptBindProjections(Plan *plan, AliasBinding **aliasLookup, ScanList scans)
-{
-    Projection *current = plan->projections->first;
     bool success = true;
 
-    while (current != NULL)
+    for (int i = 0; i < referenced.length; i++)
     {
-        if (current->type == LPLAN_PROJECT)
+        Identifier *unresolved = referenced.data[i];
+        bool couldBind = false;
+
+        couldBind = TryBindWithAlias(unresolved, aliasLookup);
+
+        if (couldBind == false)
         {
-            success &= AttemptBindProjection((Projection *)current, aliasLookup, scans);
-            goto Next;
-        }
-        else if (current->type == LPLAN_PROJECT_ALL)
-        {
-            goto Next;
-        }
-        else
-        {
-            break;
+            couldBind = TryBindAnyRelation(unresolved, scans);
         }
 
-        Next:
-            current = (Projection *)(current)->child;
+        success &= couldBind;
     }
 
     return success;
-}
-
-static bool AttemptBindSelection(Selection *selection, AliasBinding **aliasLookup, ScanList scans)
-{
-    if (selection == NULL)
-    {
-        return true;
-    }
-
-    return AttemptBindWithAlias(&selection->unresolved, aliasLookup) &&
-           AttemptBindAnyRelation(&selection->unresolved, scans);
 }
 
 bool AttemptBind(Plan *plan, Arena *executionArena)
@@ -233,8 +184,7 @@ bool AttemptBind(Plan *plan, Arena *executionArena)
     // If something fails, continue on to give the user as much info as we can before
     // bombing out 
     success &= BindScans(&plan->scansLookup, plan->scanList, &aliasLookup, executionArena);
-    success &= AttemptBindProjections(plan, &aliasLookup, plan->scanList);
-    success &= AttemptBindSelection(plan->selection, &aliasLookup, plan->scanList);
+    success &= BindIdentifiers(plan->referenced, &aliasLookup, plan->scanList);
 
     return success;
 }

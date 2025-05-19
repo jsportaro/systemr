@@ -93,7 +93,8 @@ void RunTests(Arena *executionArena)
 {
     char* sqls[] = 
     {
-        "SELECT p.name FROM person p Where p.name = 'joe' and name = 'mike' and p.age = 15",
+        "SELECT p.name FROM person p Where (p.name = 'joe' or address_id = 4) and p.age = 15",
+        "SELECT a.name FROM person p Where (p.name = 'joe' or address_id = 4) and p.age = 15",
         "SELECT person.name FROM person, place Where name = 'joe' and name = 'mike' and place.id = 100 and person.age = 15",
         "SELECT person.name FROM person, place Where name = 'joe'",
         "SELECT person.name FROM person, place Where name = 'joe' and (person.address_id = 1 or name = 'mike')",
@@ -102,7 +103,7 @@ void RunTests(Arena *executionArena)
         "SELECT person.name FROM person, place Where age = 1 and (person.name = 'joe' or person.name='mike') and person.address_id = place.id and age = 2",
     };
     
-    for (size_t i = 0; i < 1; i++)
+    for (size_t i = 0; i < 8; i++)
     {
         printf("\nTest %ld\n", i);
         Optimize(sqls[i], *executionArena);

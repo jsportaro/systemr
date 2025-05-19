@@ -8,7 +8,6 @@ typedef struct Identifier
 {
     String qualifier;
     String name;
-    struct Identifier *next;
     Attribute *attribute;
 } Identifier;
 

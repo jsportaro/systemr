@@ -21,6 +21,8 @@ Plan *CreatePlan(ParsingContext *parsingContext, Projections *projections, PlanN
     plan->projections = projections;
     plan->scanList = parsingContext->scanList;
     plan->selection = selection;
+    plan->referenced = parsingContext->referenced;
+    plan->pushDown = !parsingContext->allAttributes;
 
     parsingContext->scans = NULL;
     parsingContext->selection = NULL;
@@ -63,9 +65,6 @@ Projection *CreateProjection(ParsingContext *parsingContext, const char *as, Exp
 
     projection->projected = expression;
     projection->type = LPLAN_PROJECT;
-    projection->unresolved = projection->identifiers = parsingContext->unresolved;
-    
-    parsingContext->unresolved = NULL;
 
     return projection;
 }
@@ -151,8 +150,7 @@ Expression *CreateIdentifierExpression(ParsingContext *parsingContext, const cha
     expression->value.identifier.name = S(name);
     expression->type = EXPR_IDENIFIER;
 
-    expression->value.identifier.next = parsingContext->unresolved;
-    parsingContext->unresolved = &expression->value.identifier;
+    *Push(&parsingContext->referenced, parsingContext->parseArena) = &expression->value.identifier;
 
     return (Expression *)expression;
 }
@@ -220,10 +218,8 @@ Selection *CreateSelection(ParsingContext *parsingContext, Expression *where)
     Selection *selection = NEW(parsingContext->parseArena, Selection);
 
     selection->condition = where;
-    selection->unresolved = parsingContext->unresolved;
     selection->type = LPLAN_SELECT;
 
-    parsingContext->unresolved = NULL;
 
     if (where->type != EXPR_GROUP)
     {

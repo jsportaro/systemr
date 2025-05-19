@@ -5,8 +5,9 @@
 #include <expressions.h>
 #include <rstrings.h>
 
-typedef struct Plan Plan;
 typedef enum PlanNodeType PlanNodeType;
+typedef struct Plan Plan;
+typedef struct Referenced Referenced;
 typedef struct PlanNode PlanNode;
 typedef struct Projections Projections;
 typedef struct LogicalRename LogicalRename;
@@ -39,6 +40,13 @@ struct Projections
    Projection *last;
 };
 
+struct Referenced
+{
+    Identifier **data;
+    ptrdiff_t length;
+    ptrdiff_t capacity;
+};
+
 struct ScanList
 {
     Scan **data;
@@ -48,10 +56,12 @@ struct ScanList
 
 struct Plan
 {
+    bool pushDown;
     Projections *projections;
     Selection *selection;
     ScanList scanList;
     ScanLookup *scansLookup;
+    Referenced referenced;
 };
 
 struct Projection
@@ -60,9 +70,6 @@ struct Projection
     PlanNode *child;
 
     Expression *projected;
-    
-    Identifier *identifiers;
-    Identifier *unresolved;
 };
 
 struct Selection

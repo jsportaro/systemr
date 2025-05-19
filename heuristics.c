@@ -48,33 +48,14 @@ static void AddScanArgument(ScanLookup **scansLookup, Identifier *identifier, Ar
     }
 }
 
-static void PushDownProjections(Plan *plan, Arena *arena)
-{
-    Projection *projection = plan->projections->first;
-
-    while (projection != NULL)
-    {
-        Identifier *identifier = projection->identifiers;
-
-        while (identifier != NULL)
-        {
-            AddScanArgument(&plan->scansLookup, identifier, arena);
-            
-            identifier = identifier->next;
-        }
-
-        projection = (Projection *)projection->child;
-    }
-}
-
 static Expression *RewriteSelection(Expression *expression, Plan *plan, Arena *arena)
 {
     switch (expression->type)
     {
         case EXPR_IDENIFIER: {
-            TermExpression *identifierExpression = (TermExpression *)expression;
+            //TermExpression *identifierExpression = (TermExpression *)expression;
 
-            AddScanArgument(&plan->scansLookup, &(identifierExpression->value.identifier), arena);
+            //AddScanArgument(&plan->scansLookup, &(identifierExpression->value.identifier), arena);
 
             return expression;
         }
@@ -176,9 +157,25 @@ static void PushDownSelection(Plan *plan, Arena *arena)
     plan->selection->condition = RewriteSelection(plan->selection->condition, plan, arena);
 }
 
+static void PushDownScanArguments(Plan *plan, Arena *arena)
+{
+    if (plan->pushDown == false)
+    {
+        return;
+    }
+
+    for (int i = 0; i < plan->referenced.length; i++)
+    {
+        Identifier *identifier = plan->referenced.data[i];
+
+        AddScanArgument(&plan->scansLookup, identifier, arena);
+    }
+}
+
 bool ApplyHeuristics(Plan *plan, Arena *arena)
 {
-    PushDownProjections(plan, arena);
+    PushDownScanArguments(plan, arena);
     PushDownSelection(plan, arena);
+
     return true;
 }
